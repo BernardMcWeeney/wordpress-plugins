@@ -51,13 +51,13 @@
 	}
 
 	.greenberry-form__field--textarea,
-	.greenberry-form__field--address,
+	.greenberry-form__field--paragraph,
 	.greenberry-form__field--checkbox,
-	.greenberry-form__field--file,
+	.greenberry-form__field--option,
 	.greenberry-form-field-editor--textarea,
-	.greenberry-form-field-editor--address,
+	.greenberry-form-field-editor--paragraph,
 	.greenberry-form-field-editor--checkbox,
-	.greenberry-form-field-editor--file,
+	.greenberry-form-field-editor--option,
 	.greenberry-form__fields--editor .block-list-appender {
 		grid-column: 1 / -1;
 	}
@@ -82,9 +82,9 @@
 	color: var(--wp--preset--color--accent, #b32d2e);
 }
 
-.greenberry-form__field input[type="email"],
-.greenberry-form__field input[type="file"],
+.greenberry-form__field input[type="date"],
 .greenberry-form__field input[type="text"],
+.greenberry-form__field select,
 .greenberry-form__field textarea {
 	background: var(--wp--preset--color--base, #ffffff);
 	border: 1px solid color-mix(in srgb, var(--wp--preset--color--contrast, #1d2327) 26%, transparent);
@@ -97,12 +97,31 @@
 	width: 100%;
 }
 
+.greenberry-form__field select {
+	appearance: none;
+	background-image:
+		linear-gradient(45deg, transparent 50%, currentColor 50%),
+		linear-gradient(135deg, currentColor 50%, transparent 50%);
+	background-position:
+		calc(100% - 18px) 50%,
+		calc(100% - 13px) 50%;
+	background-repeat: no-repeat;
+	background-size: 5px 5px;
+	padding-right: 36px;
+}
+
 .greenberry-form__field textarea {
 	min-height: 132px;
 	resize: vertical;
 }
 
+.greenberry-form__field--signature input[type="text"] {
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 1.08rem;
+}
+
 .greenberry-form--editor input:disabled,
+.greenberry-form--editor select:disabled,
 .greenberry-form--editor textarea:disabled {
 	cursor: default;
 	opacity: 1;
@@ -117,6 +136,7 @@
 }
 
 .greenberry-form__field input:focus,
+.greenberry-form__field select:focus,
 .greenberry-form__field textarea:focus {
 	border-color: var(--wp--preset--color--accent, #2271b1);
 	box-shadow: 0 0 0 1px var(--wp--preset--color--accent, #2271b1);

@@ -14,22 +14,6 @@ defined( 'ABSPATH' ) || exit;
  */
 class Blocks {
 	/**
-	 * Repository.
-	 *
-	 * @var Repository
-	 */
-	private $repository;
-
-	/**
-	 * Constructor.
-	 *
-	 * @param Repository $repository Repository.
-	 */
-	public function __construct( Repository $repository ) {
-		$this->repository = $repository;
-	}
-
-	/**
 	 * Registers hooks.
 	 *
 	 * @return void
@@ -120,7 +104,14 @@ class Blocks {
 
 		$visual_form = $this->get_visual_form_from_block( $attributes, $block );
 		$is_visual   = 'visual' === $attributes['mode'] && $visual_form;
-		$form        = $is_visual ? $visual_form : ( $attributes['formId'] ? $this->repository->get_form( absint( $attributes['formId'] ) ) : $this->repository->get_first_form() );
+
+		if ( $is_visual ) {
+			$form = $visual_form;
+		} elseif ( $attributes['formId'] ) {
+			$form = Form_Post_Type::load_form( absint( $attributes['formId'] ) );
+		} else {
+			$form = Form_Post_Type::first_form();
+		}
 
 		if ( ! $form ) {
 			return current_user_can( 'manage_options' )
@@ -227,7 +218,7 @@ class Blocks {
 	private function get_visual_fields( $inner_blocks ) {
 		$fields     = array();
 		$used_keys  = array();
-		$type_allow = array( 'text', 'email', 'textarea', 'address', 'checkbox', 'file' );
+		$type_allow = array( 'text', 'paragraph', 'date', 'signature', 'checkbox', 'option' );
 
 		foreach ( $inner_blocks as $inner_block ) {
 			if ( empty( $inner_block['blockName'] ) || 'greenberry/form-field' !== $inner_block['blockName'] ) {
@@ -256,31 +247,60 @@ class Blocks {
 			}
 			$used_keys[ $key ] = true;
 
-			$type = isset( $attrs['type'] ) ? sanitize_key( $attrs['type'] ) : 'text';
+			$type = isset( $attrs['type'] ) ? $this->normalize_field_type( sanitize_key( $attrs['type'] ) ) : 'text';
 			if ( ! in_array( $type, $type_allow, true ) ) {
 				$type = 'text';
 			}
 
-			$max_size = isset( $attrs['maxFileSize'] ) ? absint( $attrs['maxFileSize'] ) : 5;
-			if ( $max_size < 1 ) {
-				$max_size = 1;
-			} elseif ( $max_size > 25 ) {
-				$max_size = 25;
-			}
-
 			$fields[] = array(
-				'key'           => $key,
-				'label'         => $label,
-				'type'          => $type,
-				'required'      => ! empty( $attrs['required'] ),
-				'placeholder'   => isset( $attrs['placeholder'] ) ? sanitize_text_field( $attrs['placeholder'] ) : '',
-				'help_text'     => isset( $attrs['helpText'] ) ? sanitize_text_field( $attrs['helpText'] ) : '',
-				'accept'        => isset( $attrs['accept'] ) ? sanitize_text_field( $attrs['accept'] ) : '',
-				'max_file_size' => $max_size,
+				'key'         => $key,
+				'label'       => $label,
+				'type'        => $type,
+				'required'    => ! empty( $attrs['required'] ),
+				'placeholder' => isset( $attrs['placeholder'] ) ? sanitize_text_field( $attrs['placeholder'] ) : '',
+				'help_text'   => isset( $attrs['helpText'] ) ? sanitize_text_field( $attrs['helpText'] ) : '',
+				'options'     => isset( $attrs['options'] ) ? $this->sanitize_options( $attrs['options'] ) : array(),
 			);
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Normalizes older field type values to the current simple field set.
+	 *
+	 * @param string $type Raw field type.
+	 * @return string
+	 */
+	private function normalize_field_type( $type ) {
+		if ( 'textarea' === $type || 'address' === $type ) {
+			return 'paragraph';
+		}
+
+		if ( 'email' === $type || 'file' === $type ) {
+			return 'text';
+		}
+
+		return $type;
+	}
+
+	/**
+	 * Sanitizes option field choices.
+	 *
+	 * @param mixed $value Raw options, either an array or newline-separated text.
+	 * @return array<int,string>
+	 */
+	private function sanitize_options( $value ) {
+		$options = is_array( $value ) ? $value : preg_split( '/\r\n|\r|\n/', (string) $value );
+		$options = array_map( 'sanitize_text_field', array_map( 'trim', (array) $options ) );
+		$options = array_filter(
+			$options,
+			function ( $option ) {
+				return '' !== $option;
+			}
+		);
+
+		return array_values( array_unique( $options ) );
 	}
 
 	/**
@@ -306,10 +326,29 @@ class Blocks {
 	private function render_field( $field, $block_id ) {
 		$field_id = $block_id . '-' . $field['key'];
 		$help_id  = $field_id . '-help';
-		$name     = 'file' === $field['type'] ? 'greenberry_files[' . $field['key'] . ']' : 'greenberry_fields[' . $field['key'] . ']';
+		$name     = 'greenberry_fields[' . $field['key'] . ']';
 		$required = ! empty( $field['required'] );
 		$described_by = '' !== $field['help_text'] ? $help_id : '';
 		?>
+		<?php if ( 'checkbox' === $field['type'] ) : ?>
+			<label class="greenberry-form__field greenberry-form__field--checkbox" for="<?php echo esc_attr( $field_id ); ?>">
+				<span class="greenberry-form__checkbox-row">
+					<input id="<?php echo esc_attr( $field_id ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+					<span class="greenberry-form__label-text">
+						<?php echo esc_html( $field['label'] ); ?>
+						<?php if ( $required ) : ?>
+							<span class="greenberry-form__required" aria-hidden="true">*</span>
+						<?php endif; ?>
+					</span>
+				</span>
+
+				<?php if ( '' !== $field['help_text'] ) : ?>
+					<span id="<?php echo esc_attr( $help_id ); ?>" class="greenberry-form__help" title="<?php echo esc_attr( $field['help_text'] ); ?>"><?php echo esc_html( $field['help_text'] ); ?></span>
+				<?php endif; ?>
+			</label>
+			<?php return; ?>
+		<?php endif; ?>
+
 		<label class="greenberry-form__field greenberry-form__field--<?php echo esc_attr( $field['type'] ); ?>" for="<?php echo esc_attr( $field_id ); ?>">
 			<span class="greenberry-form__label-text">
 				<?php echo esc_html( $field['label'] ); ?>
@@ -318,17 +357,21 @@ class Blocks {
 				<?php endif; ?>
 			</span>
 
-			<?php if ( 'textarea' === $field['type'] || 'address' === $field['type'] ) : ?>
-				<textarea id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>" rows="<?php echo 'address' === $field['type'] ? '3' : '5'; ?>" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?> <?php echo 'address' === $field['type'] ? 'autocomplete="street-address"' : ''; ?>></textarea>
-			<?php elseif ( 'checkbox' === $field['type'] ) : ?>
-				<span class="greenberry-form__checkbox-row">
-					<input id="<?php echo esc_attr( $field_id ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
-					<span><?php esc_html_e( 'Confirmed', 'greenberry' ); ?></span>
-				</span>
-			<?php elseif ( 'file' === $field['type'] ) : ?>
-				<input id="<?php echo esc_attr( $field_id ); ?>" type="file" name="<?php echo esc_attr( $name ); ?>" accept="<?php echo esc_attr( $field['accept'] ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+			<?php if ( 'paragraph' === $field['type'] ) : ?>
+				<textarea id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>" rows="5" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>></textarea>
+			<?php elseif ( 'date' === $field['type'] ) : ?>
+				<input id="<?php echo esc_attr( $field_id ); ?>" type="date" name="<?php echo esc_attr( $name ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+			<?php elseif ( 'signature' === $field['type'] ) : ?>
+				<input id="<?php echo esc_attr( $field_id ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" class="greenberry-form__signature-input" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" autocomplete="name" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+			<?php elseif ( 'option' === $field['type'] ) : ?>
+				<select id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+					<option value=""><?php esc_html_e( 'Select an option', 'greenberry' ); ?></option>
+					<?php foreach ( $this->field_options( $field ) as $option ) : ?>
+						<option value="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $option ); ?></option>
+					<?php endforeach; ?>
+				</select>
 			<?php else : ?>
-				<input id="<?php echo esc_attr( $field_id ); ?>" type="<?php echo 'email' === $field['type'] ? 'email' : 'text'; ?>" name="<?php echo esc_attr( $name ); ?>" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" <?php echo 'email' === $field['type'] ? 'autocomplete="email"' : ''; ?> <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+				<input id="<?php echo esc_attr( $field_id ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
 			<?php endif; ?>
 
 			<?php if ( '' !== $field['help_text'] ) : ?>
@@ -336,6 +379,20 @@ class Blocks {
 			<?php endif; ?>
 		</label>
 		<?php
+	}
+
+	/**
+	 * Returns choices for an option field.
+	 *
+	 * @param array $field Field definition.
+	 * @return array<int,string>
+	 */
+	private function field_options( $field ) {
+		if ( ! empty( $field['options'] ) && is_array( $field['options'] ) ) {
+			return $field['options'];
+		}
+
+		return array();
 	}
 
 	/**
@@ -349,16 +406,26 @@ class Blocks {
 			return;
 		}
 
+		if ( is_admin() || ( defined( 'REST_REQUEST' ) && REST_REQUEST && current_user_can( 'edit_posts' ) ) ) {
+			return;
+		}
+
 		echo '<div class="greenberry-form__turnstile">';
 
-		if ( shortcode_exists( 'simple-turnstile' ) ) {
-			do_action( 'cfturnstile_enqueue_scripts' );
-			echo do_shortcode( '[simple-turnstile]' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		} elseif ( function_exists( 'cfturnstile_field_show' ) ) {
-			do_action( 'cfturnstile_enqueue_scripts' );
-			echo cfturnstile_field_show( '', '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		} elseif ( current_user_can( 'manage_options' ) ) {
-			echo '<p class="greenberry-form__warning">' . esc_html__( 'Simple Cloudflare Turnstile is required for this form but is not active or configured.', 'greenberry' ) . '</p>';
+		try {
+			if ( shortcode_exists( 'simple-turnstile' ) ) {
+				do_action( 'cfturnstile_enqueue_scripts' );
+				echo do_shortcode( '[simple-turnstile]' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			} elseif ( function_exists( 'cfturnstile_field_show' ) ) {
+				do_action( 'cfturnstile_enqueue_scripts' );
+				echo cfturnstile_field_show( '', '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			} elseif ( current_user_can( 'manage_options' ) ) {
+				echo '<p class="greenberry-form__warning">' . esc_html__( 'Simple Cloudflare Turnstile is required for this form but is not active or configured.', 'greenberry' ) . '</p>';
+			}
+		} catch ( \Throwable $error ) {
+			if ( current_user_can( 'manage_options' ) ) {
+				echo '<p class="greenberry-form__warning">' . esc_html__( 'Simple Cloudflare Turnstile could not be rendered.', 'greenberry' ) . '</p>';
+			}
 		}
 
 		echo '</div>';
@@ -400,14 +467,26 @@ class Blocks {
 	 * @return array<int,array{id:int,title:string}>
 	 */
 	private function get_forms_for_editor() {
+		$posts = get_posts(
+			array(
+				'post_type'        => Form_Post_Type::POST_TYPE,
+				'post_status'      => array( 'publish', 'draft', 'pending', 'private' ),
+				'numberposts'      => 100,
+				'orderby'          => 'title',
+				'order'            => 'ASC',
+				'suppress_filters' => false,
+			)
+		);
+
 		$forms = array();
-		foreach ( $this->repository->get_forms() as $form ) {
+		foreach ( $posts as $post ) {
+			$config = Form_Post_Type::config_for( $post );
 			$forms[] = array(
-				'id'          => absint( $form['id'] ),
-				'title'       => $form['title'],
-				'description' => $form['description'],
-				'submitLabel' => $form['submit_label'],
-				'fields'      => $form['fields'],
+				'id'          => $config['id'],
+				'title'       => '' !== $config['title'] ? $config['title'] : __( '(untitled form)', 'greenberry' ),
+				'description' => $config['description'],
+				'submitLabel' => $config['submit_label'],
+				'fields'      => $config['fields'],
 			);
 		}
 

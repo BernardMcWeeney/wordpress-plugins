@@ -3,6 +3,7 @@
 	var Fragment = wp.element.Fragment;
 	var __ = wp.i18n.__;
 	var registerBlockType = wp.blocks.registerBlockType;
+	var registerBlockVariation = wp.blocks.registerBlockVariation;
 	var InspectorControls = wp.blockEditor.InspectorControls;
 	var InnerBlocks = wp.blockEditor.InnerBlocks;
 	var useBlockProps = wp.blockEditor.useBlockProps;
@@ -11,56 +12,126 @@
 	var ToggleControl = wp.components.ToggleControl;
 	var TextControl = wp.components.TextControl;
 	var TextareaControl = wp.components.TextareaControl;
-	var RangeControl = wp.components.RangeControl;
 	var Notice = wp.components.Notice;
 
 	var FIELD_TYPES = [
-		{ label: __( 'Text', 'greenberry' ), value: 'text' },
-		{ label: __( 'Email', 'greenberry' ), value: 'email' },
-		{ label: __( 'Long text', 'greenberry' ), value: 'textarea' },
-		{ label: __( 'Address', 'greenberry' ), value: 'address' },
+		{ label: __( 'Single line text', 'greenberry' ), value: 'text' },
+		{ label: __( 'Paragraph', 'greenberry' ), value: 'paragraph' },
+		{ label: __( 'Date', 'greenberry' ), value: 'date' },
+		{ label: __( 'Signature', 'greenberry' ), value: 'signature' },
 		{ label: __( 'Checkbox', 'greenberry' ), value: 'checkbox' },
-		{ label: __( 'File upload', 'greenberry' ), value: 'file' },
+		{ label: __( 'Option', 'greenberry' ), value: 'option' },
 	];
 
 	var FORM_TEMPLATE = [
 		[
 			'greenberry/form-field',
 			{
-				label: __( 'Name', 'greenberry' ),
-				key: 'name',
+				label: __( 'Text field', 'greenberry' ),
+				key: 'text_field',
 				type: 'text',
 				required: true,
+				placeholder: __( 'Enter text', 'greenberry' ),
 			},
 		],
 		[
 			'greenberry/form-field',
 			{
-				label: __( 'Email address', 'greenberry' ),
-				key: 'email',
-				type: 'email',
+				label: __( 'Paragraph field', 'greenberry' ),
+				key: 'paragraph_field',
+				type: 'paragraph',
 				required: true,
-				helpText: __( 'Used only to reply to this enquiry.', 'greenberry' ),
+				placeholder: __( 'Enter details', 'greenberry' ),
 			},
 		],
 		[
 			'greenberry/form-field',
 			{
-				label: __( 'Message', 'greenberry' ),
-				key: 'message',
-				type: 'textarea',
-				required: true,
-			},
-		],
-		[
-			'greenberry/form-field',
-			{
-				label: __( 'I consent to this information being emailed to the site owner for the purpose of responding to my enquiry.', 'greenberry' ),
-				key: 'privacy_consent',
+				label: __( 'Checkbox field', 'greenberry' ),
+				key: 'checkbox_field',
 				type: 'checkbox',
 				required: true,
 			},
 		],
+	];
+
+	var FIELD_PRESETS = [
+		{
+			name: 'text',
+			title: __( 'Text Field', 'greenberry' ),
+			description: __( 'A clean single-line text field.', 'greenberry' ),
+			icon: 'editor-textcolor',
+			attributes: {
+				label: __( 'Text field', 'greenberry' ),
+				key: 'text_field',
+				type: 'text',
+				required: false,
+				placeholder: __( 'Enter text', 'greenberry' ),
+			},
+		},
+		{
+			name: 'paragraph',
+			title: __( 'Paragraph Field', 'greenberry' ),
+			description: __( 'A clean multi-line paragraph field.', 'greenberry' ),
+			icon: 'editor-paragraph',
+			attributes: {
+				label: __( 'Paragraph field', 'greenberry' ),
+				key: 'paragraph_field',
+				type: 'paragraph',
+				required: false,
+				placeholder: __( 'Enter details', 'greenberry' ),
+			},
+		},
+		{
+			name: 'date',
+			title: __( 'Date Field', 'greenberry' ),
+			description: __( 'A clean date picker field.', 'greenberry' ),
+			icon: 'calendar-alt',
+			attributes: {
+				label: __( 'Date field', 'greenberry' ),
+				key: 'date_field',
+				type: 'date',
+				required: false,
+			},
+		},
+		{
+			name: 'signature',
+			title: __( 'Signature Field', 'greenberry' ),
+			description: __( 'A clean typed signature field.', 'greenberry' ),
+			icon: 'edit',
+			attributes: {
+				label: __( 'Signature', 'greenberry' ),
+				key: 'signature',
+				type: 'signature',
+				required: false,
+				placeholder: __( 'Type your name', 'greenberry' ),
+			},
+		},
+		{
+			name: 'checkbox',
+			title: __( 'Checkbox Field', 'greenberry' ),
+			description: __( 'A clean checkbox confirmation field.', 'greenberry' ),
+			icon: 'yes-alt',
+			attributes: {
+				label: __( 'Checkbox field', 'greenberry' ),
+				key: 'checkbox_field',
+				type: 'checkbox',
+				required: false,
+			},
+		},
+		{
+			name: 'option',
+			title: __( 'Option Field', 'greenberry' ),
+			description: __( 'A clean option selector field.', 'greenberry' ),
+			icon: 'list-view',
+			attributes: {
+				label: __( 'Option field', 'greenberry' ),
+				key: 'option_field',
+				type: 'option',
+				required: false,
+				options: __( 'Option one\nOption two\nOption three', 'greenberry' ),
+			},
+		},
 	];
 
 	function getForms() {
@@ -92,56 +163,105 @@
 			.replace( /^_+|_+$/g, '' );
 	}
 
+	function normalizeFieldType( type ) {
+		if ( 'textarea' === type || 'address' === type ) {
+			return 'paragraph';
+		}
+
+		if ( 'email' === type || 'file' === type ) {
+			return 'text';
+		}
+
+		return FIELD_TYPES.some( function ( fieldType ) {
+			return fieldType.value === type;
+		} )
+			? type
+			: 'text';
+	}
+
+	function normalizeOptions( value ) {
+		if ( Array.isArray( value ) ) {
+			value = value.join( '\n' );
+		}
+
+		return String( value || '' )
+			.split( /\r?\n/ )
+			.map( function ( option ) {
+				return option.trim();
+			} )
+			.filter( function ( option ) {
+				return option.length;
+			} )
+			.join( '\n' );
+	}
+
 	function getFieldAttributes( attributes ) {
-		var type = attributes.type || 'text';
+		var type = normalizeFieldType( attributes.type || 'text' );
 		var label = attributes.label || __( 'Field label', 'greenberry' );
 		var key = attributes.key || slugify( label ) || 'field';
 
 		return {
 			label: label,
 			key: key,
-			type: FIELD_TYPES.some( function ( fieldType ) {
-				return fieldType.value === type;
-			} )
-				? type
-				: 'text',
+			type: type,
 			required: !! attributes.required,
 			placeholder: attributes.placeholder || '',
 			helpText: attributes.helpText || '',
-			accept: attributes.accept || '',
-			maxFileSize: parseInt( attributes.maxFileSize, 10 ) || 5,
+			options: normalizeOptions( attributes.options || __( 'Option one\nOption two\nOption three', 'greenberry' ) ),
 		};
 	}
 
 	function renderFieldPreview( field ) {
-		var label = el(
-			'span',
-			{ className: 'greenberry-form__label-text' },
-			field.label,
-			field.required
-				? el( 'span', { className: 'greenberry-form__required', 'aria-hidden': true }, '*' )
-				: null
-		);
+		var requiredMark = field.required
+			? el( 'span', { className: 'greenberry-form__required', 'aria-hidden': true }, '*' )
+			: null;
+		var label = el( 'span', { className: 'greenberry-form__label-text' }, field.label, requiredMark );
 		var input;
 
-		if ( 'textarea' === field.type || 'address' === field.type ) {
+		if ( 'paragraph' === field.type ) {
 			input = el( 'textarea', {
 				disabled: true,
-				rows: 'address' === field.type ? 3 : 5,
+				rows: 5,
 				placeholder: field.placeholder,
 			} );
+		} else if ( 'date' === field.type ) {
+			input = el( 'input', { type: 'date', disabled: true } );
+		} else if ( 'signature' === field.type ) {
+			input = el( 'input', {
+				type: 'text',
+				disabled: true,
+				placeholder: field.placeholder || __( 'Type your name', 'greenberry' ),
+			} );
 		} else if ( 'checkbox' === field.type ) {
-			input = el(
+			return el(
 				'span',
-				{ className: 'greenberry-form__checkbox-row' },
-				el( 'input', { type: 'checkbox', disabled: true } ),
-				el( 'span', null, __( 'Confirmed', 'greenberry' ) )
+				{
+					className:
+						'greenberry-form__field greenberry-form__field--checkbox greenberry-form__field--editor',
+				},
+				el(
+					'span',
+					{ className: 'greenberry-form__checkbox-row' },
+					el( 'input', { type: 'checkbox', disabled: true } ),
+					label
+				),
+				field.helpText
+					? el( 'span', { className: 'greenberry-form__help' }, field.helpText )
+					: null
 			);
-		} else if ( 'file' === field.type ) {
-			input = el( 'input', { type: 'file', disabled: true } );
+		} else if ( 'option' === field.type ) {
+			input = el(
+				'select',
+				{ disabled: true },
+				normalizeOptions( field.options )
+					.split( '\n' )
+					.map( function ( option ) {
+						return el( 'option', { key: option, value: option }, option );
+					} )
+			);
 		} else {
 			input = el( 'input', {
-				type: 'email' === field.type ? 'email' : 'text',
+				type: 'text',
 				disabled: true,
 				placeholder: field.placeholder,
 			} );
@@ -199,9 +319,9 @@
 	}
 
 	registerBlockType( 'greenberry/form-field', {
+		apiVersion: 3,
 		title: __( 'Form Field', 'greenberry' ),
-		description: __( 'A field inside a Greenberry visual form.', 'greenberry' ),
-		parent: [ 'greenberry/form' ],
+		description: __( 'A field inside a Greenberry form.', 'greenberry' ),
 		category: 'widgets',
 		icon: 'editor-table',
 		attributes: {
@@ -229,13 +349,9 @@
 				type: 'string',
 				default: '',
 			},
-			accept: {
+			options: {
 				type: 'string',
-				default: '',
-			},
-			maxFileSize: {
-				type: 'number',
-				default: 5,
+				default: __( 'Option one\nOption two\nOption three', 'greenberry' ),
 			},
 		},
 		supports: {
@@ -259,10 +375,13 @@
 						PanelBody,
 						{ title: __( 'Field', 'greenberry' ), initialOpen: true },
 						el( SelectControl, {
+							__next40pxDefaultSize: true,
 							label: __( 'Type', 'greenberry' ),
 							value: field.type,
 							options: FIELD_TYPES,
-							onChange: setAttribute( props, 'type' ),
+							onChange: function ( value ) {
+								props.setAttributes( { type: normalizeFieldType( value ) } );
+							},
 						} ),
 						el( TextControl, {
 							label: __( 'Label', 'greenberry' ),
@@ -288,37 +407,28 @@
 							checked: field.required,
 							onChange: setAttribute( props, 'required' ),
 						} ),
-						'checkbox' !== field.type && 'file' !== field.type
+						-1 !== [ 'text', 'paragraph', 'signature' ].indexOf( field.type )
 							? el( TextControl, {
 									label: __( 'Placeholder', 'greenberry' ),
 									value: field.placeholder,
 									onChange: setAttribute( props, 'placeholder' ),
 								} )
 							: null,
+						'option' === field.type
+							? el( TextareaControl, {
+									label: __( 'Options', 'greenberry' ),
+									help: __( 'One option per line.', 'greenberry' ),
+									value: field.options,
+									onChange: function ( value ) {
+										props.setAttributes( { options: normalizeOptions( value ) } );
+									},
+								} )
+							: null,
 						el( TextareaControl, {
 							label: __( 'Help text', 'greenberry' ),
 							value: field.helpText,
 							onChange: setAttribute( props, 'helpText' ),
-						} ),
-						'file' === field.type
-							? el(
-									Fragment,
-									null,
-									el( TextControl, {
-										label: __( 'Accepted file types', 'greenberry' ),
-										help: __( 'Example: .pdf,.jpg,.png', 'greenberry' ),
-										value: field.accept,
-										onChange: setAttribute( props, 'accept' ),
-									} ),
-									el( RangeControl, {
-										label: __( 'Maximum file size', 'greenberry' ),
-										value: field.maxFileSize,
-										min: 1,
-										max: 25,
-										onChange: setAttribute( props, 'maxFileSize' ),
-									} )
-								)
-							: null
+						} )
 					)
 				),
 				renderFieldPreview( field )
@@ -329,7 +439,22 @@
 		},
 	} );
 
+	if ( registerBlockVariation ) {
+		FIELD_PRESETS.forEach( function ( preset ) {
+			registerBlockVariation( 'greenberry/form-field', {
+				name: preset.name,
+				title: preset.title,
+				description: preset.description,
+				icon: preset.icon,
+				attributes: preset.attributes,
+				scope: [ 'inserter', 'block' ],
+				isActive: [ 'type', 'key' ],
+			} );
+		} );
+	}
+
 	registerBlockType( 'greenberry/form', {
+		apiVersion: 3,
 		edit: function ( props ) {
 			var attributes = props.attributes;
 			var forms = getForms();
@@ -362,6 +487,7 @@
 						PanelBody,
 						{ title: __( 'Form setup', 'greenberry' ), initialOpen: true },
 						el( SelectControl, {
+							__next40pxDefaultSize: true,
 							label: __( 'Builder mode', 'greenberry' ),
 							value: mode,
 							options: [
@@ -372,6 +498,7 @@
 						} ),
 						'saved' === mode
 							? el( SelectControl, {
+									__next40pxDefaultSize: true,
 									label: __( 'Saved form', 'greenberry' ),
 									value: attributes.formId,
 									options: formOptions,

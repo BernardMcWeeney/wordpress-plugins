@@ -103,7 +103,7 @@ class Editor {
 		wp_enqueue_script(
 			'greenberry-social-editor',
 			GREENBERRY_PLUGIN_URL . 'Social/social-editor.js',
-			array( 'wp-components', 'wp-data', 'wp-edit-post', 'wp-element', 'wp-i18n', 'wp-plugins' ),
+			array( 'wp-components', 'wp-data', 'wp-edit-post', 'wp-editor', 'wp-element', 'wp-i18n', 'wp-plugins' ),
 			GREENBERRY_VERSION,
 			true
 		);

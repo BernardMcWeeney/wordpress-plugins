@@ -129,42 +129,38 @@ class Admin {
 		$settings   = $this->settings->get();
 		$post_types = $this->settings->get_assignable_post_types();
 		$taxonomies = $this->settings->get_assignable_taxonomies();
-		$site_name  = get_bloginfo( 'name' );
-		$logo_url   = $this->get_site_logo_url();
+
+		\Greenberry\Admin_UI::open(
+			__( 'Category Featured Image', 'greenberry' ),
+			__( 'Assign a fallback featured image only when content is saved without one. Term defaults win, then post type, then the global default.', 'greenberry' ),
+			'greenberry-category-featured-image-admin'
+		);
+		$this->render_notice();
 		?>
-		<div class="wrap greenberry-admin greenberry-category-featured-image-admin">
-			<h1><?php esc_html_e( 'Category Featured Image', 'greenberry' ); ?></h1>
-			<?php $this->render_notice(); ?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="greenberry_category_featured_image_save">
+			<?php wp_nonce_field( 'greenberry_category_featured_image_save' ); ?>
 
-			<div class="greenberry-module-hero">
-				<div class="greenberry-module-brand">
-					<?php if ( $logo_url ) : ?>
-						<img src="<?php echo esc_url( $logo_url ); ?>" alt="">
-					<?php else : ?>
-						<span><?php echo esc_html( $this->get_site_initials( $site_name ) ); ?></span>
-					<?php endif; ?>
-				</div>
-				<div>
-					<p class="greenberry-eyebrow"><?php esc_html_e( 'Greenberry Category Featured Image', 'greenberry' ); ?></p>
-					<h2><?php echo esc_html( $site_name ); ?></h2>
-					<p><?php esc_html_e( 'Assign branded fallback featured images only when saved content does not already have one.', 'greenberry' ); ?></p>
-				</div>
-			</div>
+			<div data-greenberry-tabs>
+				<nav class="nav-tab-wrapper" aria-label="<?php esc_attr_e( 'Featured image sections', 'greenberry' ); ?>">
+					<button type="button" class="nav-tab nav-tab-active" data-greenberry-tab="global"><?php esc_html_e( 'Global Default', 'greenberry' ); ?></button>
+					<button type="button" class="nav-tab" data-greenberry-tab="post-types"><?php esc_html_e( 'Post Types', 'greenberry' ); ?></button>
+					<button type="button" class="nav-tab" data-greenberry-tab="terms"><?php esc_html_e( 'Taxonomy Terms', 'greenberry' ); ?></button>
+				</nav>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="greenberry_category_featured_image_save">
-				<?php wp_nonce_field( 'greenberry_category_featured_image_save' ); ?>
-
-				<div class="greenberry-grid greenberry-grid--featured-image">
+				<div class="greenberry-tab-panel" data-greenberry-panel="global">
 					<section class="greenberry-panel">
 						<h2><?php esc_html_e( 'Global Default', 'greenberry' ); ?></h2>
-						<label class="greenberry-switch-row">
-							<input type="checkbox" name="greenberry_category_featured_image[enabled]" value="1" <?php checked( ! empty( $settings['enabled'] ) ); ?>>
-							<span>
-								<strong><?php esc_html_e( 'Enable automatic featured image defaults', 'greenberry' ); ?></strong>
-								<small><?php esc_html_e( 'Existing featured images are left untouched.', 'greenberry' ); ?></small>
-							</span>
-						</label>
+						<?php
+						\Greenberry\Admin_UI::toggle(
+							array(
+								'name'    => 'greenberry_category_featured_image[enabled]',
+								'checked' => ! empty( $settings['enabled'] ),
+								'label'   => __( 'Enable automatic featured image defaults', 'greenberry' ),
+								'help'    => __( 'Existing featured images are always left untouched.', 'greenberry' ),
+							)
+						);
+						?>
 
 						<div class="greenberry-field">
 							<label for="greenberry-category-featured-image-global"><?php esc_html_e( 'Fallback image', 'greenberry' ); ?></label>
@@ -172,23 +168,28 @@ class Admin {
 							<p class="description"><?php esc_html_e( 'Used when no matching taxonomy term or post type default is configured.', 'greenberry' ); ?></p>
 						</div>
 					</section>
+				</div>
 
+				<div class="greenberry-tab-panel" data-greenberry-panel="post-types" hidden>
 					<section class="greenberry-panel">
 						<h2><?php esc_html_e( 'Post Type Defaults', 'greenberry' ); ?></h2>
 						<?php $this->render_post_type_defaults( $post_types, $settings ); ?>
 					</section>
 				</div>
 
-				<section class="greenberry-panel">
-					<h2><?php esc_html_e( 'Taxonomy Term Defaults', 'greenberry' ); ?></h2>
-					<p class="greenberry-muted"><?php esc_html_e( 'Term defaults take priority over post type and global defaults.', 'greenberry' ); ?></p>
-					<?php $this->render_taxonomy_defaults( $taxonomies, $settings ); ?>
-				</section>
+				<div class="greenberry-tab-panel" data-greenberry-panel="terms" hidden>
+					<section class="greenberry-panel">
+						<h2><?php esc_html_e( 'Taxonomy Term Defaults', 'greenberry' ); ?></h2>
+						<p class="greenberry-muted"><?php esc_html_e( 'Term defaults take priority over post type and global defaults.', 'greenberry' ); ?></p>
+						<?php $this->render_taxonomy_defaults( $taxonomies, $settings ); ?>
+					</section>
+				</div>
+			</div>
 
-				<?php submit_button( __( 'Save Featured Image Defaults', 'greenberry' ) ); ?>
-			</form>
-		</div>
+			<?php submit_button( __( 'Save Changes', 'greenberry' ) ); ?>
+		</form>
 		<?php
+		\Greenberry\Admin_UI::close();
 	}
 
 	/**
@@ -338,48 +339,5 @@ class Admin {
 			<p><?php echo esc_html( $messages[ $notice ] ); ?></p>
 		</div>
 		<?php
-	}
-
-	/**
-	 * Gets a logo URL.
-	 *
-	 * @return string
-	 */
-	private function get_site_logo_url() {
-		$custom_logo_id = absint( get_theme_mod( 'custom_logo' ) );
-		if ( $custom_logo_id ) {
-			$logo = wp_get_attachment_image_url( $custom_logo_id, 'thumbnail' );
-			if ( $logo ) {
-				return $logo;
-			}
-		}
-
-		$site_icon = get_site_icon_url( 96 );
-
-		return $site_icon ? $site_icon : '';
-	}
-
-	/**
-	 * Gets initials for a logo fallback.
-	 *
-	 * @param string $site_name Site name.
-	 * @return string
-	 */
-	private function get_site_initials( $site_name ) {
-		$words    = preg_split( '/\s+/', trim( $site_name ) );
-		$initials = '';
-
-		foreach ( $words as $word ) {
-			if ( '' === $word ) {
-				continue;
-			}
-
-			$initials .= strtoupper( substr( $word, 0, 1 ) );
-			if ( 2 <= strlen( $initials ) ) {
-				break;
-			}
-		}
-
-		return '' !== $initials ? $initials : 'G';
 	}
 }

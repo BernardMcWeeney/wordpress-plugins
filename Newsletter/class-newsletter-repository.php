@@ -301,6 +301,63 @@ class Repository {
 	}
 
 	/**
+	 * Updates an existing contact.
+	 *
+	 * @param int   $contact_id Contact ID.
+	 * @param array $data Contact data.
+	 * @return bool|\WP_Error
+	 */
+	public function update_contact( $contact_id, $data ) {
+		global $wpdb;
+
+		$contact_id = absint( $contact_id );
+		$contact    = $this->get_contact( $contact_id );
+		if ( ! $contact ) {
+			return new \WP_Error( 'contact_not_found', __( 'That contact could not be found.', 'greenberry' ) );
+		}
+
+		$email = isset( $data['email'] ) ? sanitize_email( $data['email'] ) : $contact->email;
+		if ( ! is_email( $email ) ) {
+			return new \WP_Error( 'invalid_email', __( 'Please enter a valid email address.', 'greenberry' ) );
+		}
+
+		$status = isset( $data['status'] ) ? sanitize_key( $data['status'] ) : $contact->status;
+		if ( ! in_array( $status, array( 'subscribed', 'pending', 'unsubscribed', 'bounced' ), true ) ) {
+			$status = 'subscribed';
+		}
+
+		$payload = array(
+			'email'       => $email,
+			'first_name'  => isset( $data['first_name'] ) ? sanitize_text_field( $data['first_name'] ) : '',
+			'last_name'   => isset( $data['last_name'] ) ? sanitize_text_field( $data['last_name'] ) : '',
+			'status'      => $status,
+			'updated_at'  => current_time( 'mysql' ),
+		);
+
+		if ( 'unsubscribed' === $status ) {
+			$payload['unsubscribed_at'] = current_time( 'mysql' );
+		} elseif ( 'subscribed' === $status ) {
+			$payload['unsubscribed_at'] = null;
+		}
+
+		$updated = $wpdb->update(
+			$this->table( 'contacts' ),
+			$payload,
+			array( 'id' => $contact_id )
+		);
+
+		if ( false === $updated ) {
+			return new \WP_Error( 'contact_update_failed', __( 'Could not update the contact.', 'greenberry' ) );
+		}
+
+		if ( array_key_exists( 'tags', $data ) ) {
+			$this->set_contact_tags( $contact_id, $data['tags'] );
+		}
+
+		return true;
+	}
+
+	/**
 	 * Deletes a contact and its tag relationships.
 	 *
 	 * @param int $contact_id Contact ID.
@@ -317,6 +374,25 @@ class Repository {
 		$wpdb->delete( $this->table( 'contact_tags' ), array( 'contact_id' => $contact_id ) );
 
 		return false !== $wpdb->delete( $this->table( 'contacts' ), array( 'id' => $contact_id ) );
+	}
+
+	/**
+	 * Replaces all tags on a contact.
+	 *
+	 * @param int          $contact_id Contact ID.
+	 * @param string|array $tags Tags.
+	 * @return void
+	 */
+	public function set_contact_tags( $contact_id, $tags ) {
+		global $wpdb;
+
+		$contact_id = absint( $contact_id );
+		if ( ! $contact_id ) {
+			return;
+		}
+
+		$wpdb->delete( $this->table( 'contact_tags' ), array( 'contact_id' => $contact_id ) );
+		$this->add_tags_to_contact( $contact_id, $tags );
 	}
 
 	/**
@@ -504,6 +580,40 @@ class Repository {
 	}
 
 	/**
+	 * Returns tags grouped by contact ID.
+	 *
+	 * @param array<int,int> $contact_ids Contact IDs.
+	 * @return array<int,array<int,string>>
+	 */
+	public function get_contact_tags_map( $contact_ids ) {
+		global $wpdb;
+
+		$contact_ids = array_values( array_filter( array_map( 'absint', (array) $contact_ids ) ) );
+		if ( empty( $contact_ids ) ) {
+			return array();
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $contact_ids ), '%d' ) );
+		$rows         = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT ct.contact_id, t.name FROM ' . $this->table( 'contact_tags' ) . ' ct INNER JOIN ' . $this->table( 'tags' ) . " t ON t.id = ct.tag_id WHERE ct.contact_id IN ({$placeholders}) ORDER BY t.name ASC",
+				$contact_ids
+			)
+		);
+
+		$map = array_fill_keys( $contact_ids, array() );
+		foreach ( (array) $rows as $row ) {
+			$contact_id = absint( $row->contact_id );
+			if ( ! isset( $map[ $contact_id ] ) ) {
+				$map[ $contact_id ] = array();
+			}
+			$map[ $contact_id ][] = $row->name;
+		}
+
+		return $map;
+	}
+
+	/**
 	 * Creates a tag-powered list.
 	 *
 	 * @param array $data List data.
@@ -545,6 +655,71 @@ class Repository {
 		$this->ensure_tags( $raw_tags );
 
 		return absint( $wpdb->insert_id );
+	}
+
+	/**
+	 * Updates a list.
+	 *
+	 * @param int   $list_id List ID.
+	 * @param array $data List data.
+	 * @return bool|\WP_Error
+	 */
+	public function update_list( $list_id, $data ) {
+		global $wpdb;
+
+		$list_id = absint( $list_id );
+		$list    = $this->get_list( $list_id );
+		if ( ! $list ) {
+			return new \WP_Error( 'list_not_found', __( 'That list could not be found.', 'greenberry' ) );
+		}
+
+		$name = isset( $data['name'] ) ? sanitize_text_field( $data['name'] ) : '';
+		if ( '' === $name ) {
+			return new \WP_Error( 'missing_list_name', __( 'List name is required.', 'greenberry' ) );
+		}
+
+		$raw_tags   = isset( $data['tags'] ) ? $data['tags'] : array();
+		$tags       = $this->normalize_tags( $raw_tags );
+		$tag_slugs  = wp_list_pluck( $tags, 'slug' );
+		$match_mode = isset( $data['match_mode'] ) && 'all' === $data['match_mode'] ? 'all' : 'any';
+
+		$updated = $wpdb->update(
+			$this->table( 'lists' ),
+			array(
+				'name'        => $name,
+				'slug'        => sanitize_title( $name ),
+				'description' => isset( $data['description'] ) ? sanitize_textarea_field( $data['description'] ) : '',
+				'match_mode'  => $match_mode,
+				'tag_slugs'   => wp_json_encode( array_values( $tag_slugs ) ),
+				'updated_at'  => current_time( 'mysql' ),
+			),
+			array( 'id' => $list_id )
+		);
+
+		if ( false === $updated ) {
+			return new \WP_Error( 'list_update_failed', __( 'Could not update the list. The name may already exist.', 'greenberry' ) );
+		}
+
+		$this->ensure_tags( $raw_tags );
+
+		return true;
+	}
+
+	/**
+	 * Deletes a list.
+	 *
+	 * @param int $list_id List ID.
+	 * @return bool
+	 */
+	public function delete_list( $list_id ) {
+		global $wpdb;
+
+		$list_id = absint( $list_id );
+		if ( ! $list_id ) {
+			return false;
+		}
+
+		return false !== $wpdb->delete( $this->table( 'lists' ), array( 'id' => $list_id ) );
 	}
 
 	/**
@@ -674,7 +849,61 @@ class Repository {
 	 * @return int
 	 */
 	public function count_contacts_for_list( $list_id ) {
-		return count( $this->get_contacts_for_list( $list_id, 10000 ) );
+		global $wpdb;
+
+		$list_id  = absint( $list_id );
+		$contacts = $this->table( 'contacts' );
+
+		if ( ! $list_id ) {
+			return absint( $wpdb->get_var( "SELECT COUNT(*) FROM {$contacts} WHERE status = 'subscribed'" ) );
+		}
+
+		$list = $this->get_list( $list_id );
+		if ( ! $list ) {
+			return 0;
+		}
+
+		$tag_slugs    = $this->get_list_tag_slugs( $list );
+		$contact_tags = $this->table( 'contact_tags' );
+		$tags         = $this->table( 'tags' );
+
+		if ( empty( $tag_slugs ) ) {
+			return absint( $wpdb->get_var( "SELECT COUNT(*) FROM {$contacts} WHERE status = 'subscribed'" ) );
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $tag_slugs ), '%s' ) );
+
+		if ( 'all' === $list->match_mode ) {
+			return absint(
+				$wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM (
+							SELECT c.id
+							FROM {$contacts} c
+							INNER JOIN {$contact_tags} ct ON ct.contact_id = c.id
+							INNER JOIN {$tags} t ON t.id = ct.tag_id
+							WHERE c.status = 'subscribed' AND t.slug IN ({$placeholders})
+							GROUP BY c.id
+							HAVING COUNT(DISTINCT t.slug) = %d
+						) matched",
+						array_merge( $tag_slugs, array( count( $tag_slugs ) ) )
+					)
+				)
+			);
+		}
+
+		return absint(
+			$wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(DISTINCT c.id)
+					FROM {$contacts} c
+					INNER JOIN {$contact_tags} ct ON ct.contact_id = c.id
+					INNER JOIN {$tags} t ON t.id = ct.tag_id
+					WHERE c.status = 'subscribed' AND t.slug IN ({$placeholders})",
+					$tag_slugs
+				)
+			)
+		);
 	}
 
 	/**
@@ -775,33 +1004,9 @@ class Repository {
 	public function create_automation( $data ) {
 		global $wpdb;
 
-		$name         = isset( $data['name'] ) ? sanitize_text_field( $data['name'] ) : '';
-		$trigger_type = isset( $data['trigger_type'] ) ? sanitize_key( $data['trigger_type'] ) : '';
-		$subject      = isset( $data['subject'] ) ? sanitize_text_field( $data['subject'] ) : '';
-		$post_types   = isset( $data['post_types'] ) ? $data['post_types'] : array( 'post' );
-
-		if ( is_string( $post_types ) ) {
-			$post_types = preg_split( '/[,;]+/', $post_types );
-		}
-
-		$post_types = array_values(
-			array_filter(
-				array_map(
-					static function ( $post_type ) {
-						return sanitize_key( trim( $post_type ) );
-					},
-					(array) $post_types
-				)
-			)
-		);
-
-		if ( '' === $name || '' === $trigger_type || '' === $subject ) {
-			return new \WP_Error( 'missing_automation_fields', __( 'Automation name, trigger, and subject are required.', 'greenberry' ) );
-		}
-
-		$allowed_triggers = array( 'daily_digest', 'weekly_digest', 'post_publish' );
-		if ( ! in_array( $trigger_type, $allowed_triggers, true ) ) {
-			return new \WP_Error( 'invalid_automation_trigger', __( 'Invalid automation trigger.', 'greenberry' ) );
+		$prepared = $this->prepare_automation_data( $data );
+		if ( is_wp_error( $prepared ) ) {
+			return $prepared;
 		}
 
 		$now = current_time( 'mysql' );
@@ -809,14 +1014,14 @@ class Repository {
 		$inserted = $wpdb->insert(
 			$this->table( 'automations' ),
 			array(
-				'name'         => $name,
-				'trigger_type' => $trigger_type,
-				'cadence'      => str_replace( '_digest', '', $trigger_type ),
-				'post_types'   => wp_json_encode( $post_types ),
-				'list_id'      => isset( $data['list_id'] ) ? absint( $data['list_id'] ) : 0,
-				'subject'      => $subject,
+				'name'         => $prepared['name'],
+				'trigger_type' => $prepared['trigger_type'],
+				'cadence'      => $prepared['cadence'],
+				'post_types'   => wp_json_encode( $prepared['post_types'] ),
+				'list_id'      => $prepared['list_id'],
+				'subject'      => $prepared['subject'],
 				'status'       => 'active',
-				'settings'     => wp_json_encode( isset( $data['settings'] ) ? $data['settings'] : array() ),
+				'settings'     => wp_json_encode( $prepared['settings'] ),
 				'created_at'   => $now,
 				'updated_at'   => $now,
 			)
@@ -827,6 +1032,82 @@ class Repository {
 		}
 
 		return absint( $wpdb->insert_id );
+	}
+
+	/**
+	 * Gets an automation.
+	 *
+	 * @param int $automation_id Automation ID.
+	 * @return object|null
+	 */
+	public function get_automation( $automation_id ) {
+		global $wpdb;
+
+		return $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT * FROM ' . $this->table( 'automations' ) . ' WHERE id = %d LIMIT 1',
+				absint( $automation_id )
+			)
+		);
+	}
+
+	/**
+	 * Updates an automation.
+	 *
+	 * @param int   $automation_id Automation ID.
+	 * @param array $data Automation data.
+	 * @return bool|\WP_Error
+	 */
+	public function update_automation( $automation_id, $data ) {
+		global $wpdb;
+
+		$automation_id = absint( $automation_id );
+		if ( ! $this->get_automation( $automation_id ) ) {
+			return new \WP_Error( 'automation_not_found', __( 'That automation could not be found.', 'greenberry' ) );
+		}
+
+		$prepared = $this->prepare_automation_data( $data );
+		if ( is_wp_error( $prepared ) ) {
+			return $prepared;
+		}
+
+		$updated = $wpdb->update(
+			$this->table( 'automations' ),
+			array(
+				'name'         => $prepared['name'],
+				'trigger_type' => $prepared['trigger_type'],
+				'cadence'      => $prepared['cadence'],
+				'post_types'   => wp_json_encode( $prepared['post_types'] ),
+				'list_id'      => $prepared['list_id'],
+				'subject'      => $prepared['subject'],
+				'settings'     => wp_json_encode( $prepared['settings'] ),
+				'updated_at'   => current_time( 'mysql' ),
+			),
+			array( 'id' => $automation_id )
+		);
+
+		if ( false === $updated ) {
+			return new \WP_Error( 'automation_update_failed', __( 'Could not update the automation.', 'greenberry' ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Deletes an automation.
+	 *
+	 * @param int $automation_id Automation ID.
+	 * @return bool
+	 */
+	public function delete_automation( $automation_id ) {
+		global $wpdb;
+
+		$automation_id = absint( $automation_id );
+		if ( ! $automation_id ) {
+			return false;
+		}
+
+		return false !== $wpdb->delete( $this->table( 'automations' ), array( 'id' => $automation_id ) );
 	}
 
 	/**
@@ -849,7 +1130,58 @@ class Repository {
 			);
 		}
 
-		return $wpdb->get_results( 'SELECT * FROM ' . $automations . ' ORDER BY created_at DESC LIMIT 50' );
+		return $wpdb->get_results( "SELECT * FROM {$automations} WHERE status = 'active' ORDER BY created_at DESC LIMIT 50" );
+	}
+
+	/**
+	 * Prepares automation data for insert/update.
+	 *
+	 * @param array $data Raw data.
+	 * @return array|\WP_Error
+	 */
+	private function prepare_automation_data( $data ) {
+		$name         = isset( $data['name'] ) ? sanitize_text_field( $data['name'] ) : '';
+		$trigger_type = isset( $data['trigger_type'] ) ? sanitize_key( $data['trigger_type'] ) : '';
+		$subject      = isset( $data['subject'] ) ? sanitize_text_field( $data['subject'] ) : '';
+		$post_types   = isset( $data['post_types'] ) ? $data['post_types'] : array( 'post' );
+
+		if ( is_string( $post_types ) ) {
+			$post_types = preg_split( '/[,;]+/', $post_types );
+		}
+
+		$post_types = array_values(
+			array_filter(
+				array_map(
+					static function ( $post_type ) {
+						return sanitize_key( trim( $post_type ) );
+					},
+					(array) $post_types
+				)
+			)
+		);
+
+		if ( empty( $post_types ) ) {
+			$post_types = array( 'post' );
+		}
+
+		if ( '' === $name || '' === $trigger_type || '' === $subject ) {
+			return new \WP_Error( 'missing_automation_fields', __( 'Automation name, trigger, and subject are required.', 'greenberry' ) );
+		}
+
+		$allowed_triggers = array( 'daily_digest', 'weekly_digest', 'post_publish' );
+		if ( ! in_array( $trigger_type, $allowed_triggers, true ) ) {
+			return new \WP_Error( 'invalid_automation_trigger', __( 'Invalid automation trigger.', 'greenberry' ) );
+		}
+
+		return array(
+			'name'         => $name,
+			'trigger_type' => $trigger_type,
+			'cadence'      => str_replace( '_digest', '', $trigger_type ),
+			'post_types'   => $post_types,
+			'list_id'      => isset( $data['list_id'] ) ? absint( $data['list_id'] ) : 0,
+			'subject'      => $subject,
+			'settings'     => isset( $data['settings'] ) && is_array( $data['settings'] ) ? $data['settings'] : array(),
+		);
 	}
 
 	/**
@@ -869,6 +1201,18 @@ class Repository {
 			),
 			array( 'id' => absint( $automation_id ) )
 		);
+	}
+
+	/**
+	 * Gets the email template ID configured for an automation.
+	 *
+	 * @param object $automation Automation object.
+	 * @return int
+	 */
+	public function get_automation_template_id( $automation ) {
+		$settings = json_decode( (string) $automation->settings, true );
+
+		return is_array( $settings ) && isset( $settings['template_id'] ) ? absint( $settings['template_id'] ) : 0;
 	}
 
 	/**

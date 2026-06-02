@@ -36,7 +36,7 @@ class Mailer {
 			$headers[] = 'Reply-To: ' . sanitize_email( $reply_to );
 		}
 
-		$sent = wp_mail(
+		$sent = $this->send_mail(
 			$recipient,
 			$subject,
 			$this->render_submission_email( $form, $submission, $attachments, false ),
@@ -74,12 +74,30 @@ class Mailer {
 		$message = wpautop( esc_html( $this->replace_variables( $form['copy_message'], $form, $submission ) ) );
 		$content = $message . $this->render_submission_table( $submission, array(), true );
 
-		wp_mail(
+		$this->send_mail(
 			sanitize_email( $email ),
 			$subject,
 			$this->render_email_shell( $form, $subject, $content ),
 			array( 'Content-Type: text/html; charset=UTF-8' )
 		);
+	}
+
+	/**
+	 * Sends mail without letting mailer plugins crash form handling.
+	 *
+	 * @param string       $to          Recipient.
+	 * @param string       $subject     Subject.
+	 * @param string       $message     Message.
+	 * @param string|array $headers     Headers.
+	 * @param string|array $attachments Attachments.
+	 * @return bool
+	 */
+	private function send_mail( $to, $subject, $message, $headers = array(), $attachments = array() ) {
+		try {
+			return (bool) wp_mail( $to, $subject, $message, $headers, $attachments );
+		} catch ( \Throwable $error ) {
+			return false;
+		}
 	}
 
 	/**

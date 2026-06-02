@@ -52,8 +52,34 @@ class Admin {
 			'manage_options',
 			'greenberry',
 			array( $this, 'render_modules_page' ),
-			'dashicons-admin-generic',
+			'dashicons-screenoptions',
 			58
+		);
+
+		// Rename the auto-generated first submenu item from "Greenberry" to "Dashboard".
+		add_submenu_page(
+			'greenberry',
+			__( 'Dashboard', 'greenberry' ),
+			__( 'Dashboard', 'greenberry' ),
+			'manage_options',
+			'greenberry',
+			array( $this, 'render_modules_page' )
+		);
+	}
+
+	/**
+	 * Maps a module key to its settings page slug.
+	 *
+	 * @return array<string,string>
+	 */
+	private function settings_slugs() {
+		return array(
+			'newsletter'              => 'greenberry-newsletter',
+			'forms'                   => 'greenberry-forms',
+			'social'                  => 'greenberry-social',
+			'admin_colours'           => 'greenberry-admin-colours',
+			'admin_login'             => 'greenberry-admin-login',
+			'category_featured_image' => 'greenberry-category-featured-image',
 		);
 	}
 
@@ -73,6 +99,14 @@ class Admin {
 			GREENBERRY_PLUGIN_URL . 'assets/admin.css',
 			array(),
 			GREENBERRY_VERSION
+		);
+
+		wp_enqueue_script(
+			'greenberry-admin',
+			GREENBERRY_PLUGIN_URL . 'assets/admin.js',
+			array(),
+			GREENBERRY_VERSION,
+			true
 		);
 	}
 
@@ -120,47 +154,67 @@ class Admin {
 		}
 
 		$states = $this->modules->get_states();
+		$slugs  = $this->settings_slugs();
+
+		Admin_UI::open(
+			__( 'Dashboard', 'greenberry' ),
+			__( 'Turn modules on or off, then open a module to configure it.', 'greenberry' )
+		);
+
+		if ( isset( $_GET['greenberry_notice'] ) && 'modules_saved' === $_GET['greenberry_notice'] ) {
+			?>
+			<div class="notice notice-success is-dismissible">
+				<p><?php esc_html_e( 'Module settings saved.', 'greenberry' ); ?></p>
+			</div>
+			<?php
+		}
 		?>
-		<div class="wrap greenberry-admin">
-			<h1><?php esc_html_e( 'Greenberry Modules', 'greenberry' ); ?></h1>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="greenberry_save_modules">
+			<?php wp_nonce_field( 'greenberry_save_modules' ); ?>
 
-			<?php if ( isset( $_GET['greenberry_notice'] ) && 'modules_saved' === $_GET['greenberry_notice'] ) : ?>
-				<div class="notice notice-success is-dismissible">
-					<p><?php esc_html_e( 'Module settings saved.', 'greenberry' ); ?></p>
-				</div>
-			<?php endif; ?>
+			<div class="greenberry-modules">
+				<?php foreach ( $this->modules->all() as $key => $module ) : ?>
+					<?php
+					$is_on        = ! empty( $states[ $key ] );
+					$settings_url = $is_on && isset( $slugs[ $key ] )
+						? add_query_arg( array( 'page' => $slugs[ $key ] ), admin_url( 'admin.php' ) )
+						: '';
+					?>
+					<article class="greenberry-module-card <?php echo esc_attr( $is_on ? 'is-on' : 'is-off' ); ?>">
+						<div class="greenberry-module-card__head">
+							<h2><?php echo esc_html( $module['name'] ); ?></h2>
+							<?php
+							Admin_UI::toggle(
+								array(
+									'name'    => 'modules[' . $key . ']',
+									'checked' => $is_on,
+									'label'   => $module['name'],
+									'compact' => true,
+								)
+							);
+							?>
+						</div>
+						<p class="greenberry-module-card__desc"><?php echo esc_html( $module['description'] ); ?></p>
+						<div class="greenberry-module-card__foot">
+							<span class="greenberry-pill <?php echo esc_attr( $is_on ? 'is-on' : '' ); ?>">
+								<?php echo esc_html( $is_on ? __( 'Enabled', 'greenberry' ) : __( 'Disabled', 'greenberry' ) ); ?>
+							</span>
+							<?php if ( $settings_url ) : ?>
+								<a class="button button-secondary" href="<?php echo esc_url( $settings_url ); ?>">
+									<?php esc_html_e( 'Settings', 'greenberry' ); ?>
+								</a>
+							<?php endif; ?>
+						</div>
+					</article>
+				<?php endforeach; ?>
+			</div>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="greenberry-panel">
-				<input type="hidden" name="action" value="greenberry_save_modules">
-				<?php wp_nonce_field( 'greenberry_save_modules' ); ?>
-
-				<table class="widefat striped">
-					<thead>
-						<tr>
-							<th><?php esc_html_e( 'Module', 'greenberry' ); ?></th>
-							<th><?php esc_html_e( 'Status', 'greenberry' ); ?></th>
-							<th><?php esc_html_e( 'Purpose', 'greenberry' ); ?></th>
-						</tr>
-					</thead>
-					<tbody>
-						<?php foreach ( $this->modules->all() as $key => $module ) : ?>
-							<tr>
-								<td><strong><?php echo esc_html( $module['name'] ); ?></strong></td>
-								<td>
-									<label>
-										<input type="checkbox" name="modules[<?php echo esc_attr( $key ); ?>]" value="1" <?php checked( ! empty( $states[ $key ] ) ); ?>>
-										<?php esc_html_e( 'Enabled', 'greenberry' ); ?>
-									</label>
-								</td>
-								<td><?php echo esc_html( $module['description'] ); ?></td>
-							</tr>
-						<?php endforeach; ?>
-					</tbody>
-				</table>
-
-				<?php submit_button( __( 'Save Modules', 'greenberry' ) ); ?>
-			</form>
-		</div>
+			<p class="greenberry-modules__save">
+				<?php submit_button( __( 'Save Changes', 'greenberry' ), 'primary', 'submit', false ); ?>
+			</p>
+		</form>
 		<?php
+		Admin_UI::close();
 	}
 }

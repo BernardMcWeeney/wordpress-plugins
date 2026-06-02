@@ -58,6 +58,8 @@ class Module {
 
 		( new Rest( $repository ) )->init();
 		( new Blocks() )->init();
+		( new Campaign_Post_Type( $repository ) )->init();
+		( new Email_Template_Post_Type() )->init();
 
 		if ( is_admin() ) {
 			( new Admin( $repository, $mailer ) )->init();

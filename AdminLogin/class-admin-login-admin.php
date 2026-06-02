@@ -120,11 +120,13 @@ class Admin {
 		$site_initials  = $this->settings->get_site_initials();
 		$site_name      = get_bloginfo( 'name' );
 		$preview_message = trim( str_replace( '{site_name}', $site_name, $settings['message'] ) );
+		\Greenberry\Admin_UI::open(
+			__( 'Admin Login', 'greenberry' ),
+			__( 'Theme the WordPress login screen with a message, logo, and background image.', 'greenberry' ),
+			'greenberry-admin-login-admin'
+		);
+		$this->render_notice();
 		?>
-		<div class="wrap greenberry-admin greenberry-admin-login-admin">
-			<h1><?php esc_html_e( 'Admin Login', 'greenberry' ); ?></h1>
-			<?php $this->render_notice(); ?>
-
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="greenberry_admin_login_save_settings">
 				<?php wp_nonce_field( 'greenberry_admin_login_save_settings' ); ?>
@@ -194,10 +196,10 @@ class Admin {
 					</section>
 				</div>
 
-				<?php submit_button( __( 'Save Admin Login Settings', 'greenberry' ) ); ?>
+				<?php submit_button( __( 'Save Changes', 'greenberry' ) ); ?>
 			</form>
-		</div>
 		<?php
+		\Greenberry\Admin_UI::close();
 	}
 
 	/**

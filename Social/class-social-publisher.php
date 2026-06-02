@@ -51,7 +51,23 @@ class Publisher {
 			return;
 		}
 
-		$this->publish_post( absint( $post->ID ), 'automatic' );
+		// Defer the remote API calls to a background event so they never block
+		// or break the post-save request (which would surface in the block
+		// editor as "The response is not a valid JSON response").
+		$post_id = absint( $post->ID );
+		if ( ! wp_next_scheduled( 'greenberry_social_publish_post', array( $post_id ) ) ) {
+			wp_schedule_single_event( time() + 5, 'greenberry_social_publish_post', array( $post_id ) );
+		}
+	}
+
+	/**
+	 * Publishes a scheduled post in the background.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	public function publish_scheduled_post( $post_id ) {
+		$this->publish_post( absint( $post_id ), 'automatic' );
 	}
 
 	/**

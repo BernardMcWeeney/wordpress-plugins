@@ -14,13 +14,6 @@ defined( 'ABSPATH' ) || exit;
  */
 class Rest {
 	/**
-	 * Repository.
-	 *
-	 * @var Repository
-	 */
-	private $repository;
-
-	/**
 	 * Mailer.
 	 *
 	 * @var Mailer
@@ -30,12 +23,10 @@ class Rest {
 	/**
 	 * Constructor.
 	 *
-	 * @param Repository $repository Repository.
-	 * @param Mailer     $mailer Mailer.
+	 * @param Mailer $mailer Mailer.
 	 */
-	public function __construct( Repository $repository, Mailer $mailer ) {
-		$this->repository = $repository;
-		$this->mailer     = $mailer;
+	public function __construct( Mailer $mailer ) {
+		$this->mailer = $mailer;
 	}
 
 	/**
@@ -218,7 +209,7 @@ class Rest {
 	 * @return array|\WP_Error
 	 */
 	private function submit_form( $form_id, $data, $files ) {
-		$form = $this->repository->get_form( $form_id );
+		$form = Form_Post_Type::load_form( $form_id );
 		if ( ! $form ) {
 			return new \WP_Error( 'form_not_found', __( 'This form is not available.', 'greenberry' ), array( 'status' => 404 ) );
 		}
@@ -418,6 +409,42 @@ class Rest {
 			);
 		}
 
+		if ( 'date' === $field['type'] ) {
+			$clean = sanitize_text_field( $value );
+			if ( '' !== $clean && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $clean ) ) {
+				return new \WP_Error(
+					'invalid_date',
+					sprintf(
+						/* translators: %s: field label. */
+						__( 'Please enter a valid date for %s.', 'greenberry' ),
+						$field['label']
+					),
+					array( 'status' => 400 )
+				);
+			}
+
+			return $this->submission_row( $field, $clean, $clean );
+		}
+
+		if ( 'option' === $field['type'] ) {
+			$clean   = sanitize_text_field( $value );
+			$options = $this->field_options( $field );
+
+			if ( '' !== $clean && ! in_array( $clean, $options, true ) ) {
+				return new \WP_Error(
+					'invalid_option',
+					sprintf(
+						/* translators: %s: field label. */
+						__( 'Please choose a valid option for %s.', 'greenberry' ),
+						$field['label']
+					),
+					array( 'status' => 400 )
+				);
+			}
+
+			return $this->submission_row( $field, $clean, $clean );
+		}
+
 		if ( 'email' === $field['type'] ) {
 			$email = sanitize_email( $value );
 			if ( '' !== $value && ! is_email( $email ) ) {
@@ -427,13 +454,34 @@ class Rest {
 			return $this->submission_row( $field, $email, $email );
 		}
 
-		if ( in_array( $field['type'], array( 'textarea', 'address' ), true ) ) {
+		if ( in_array( $field['type'], array( 'paragraph', 'textarea', 'address' ), true ) ) {
 			$clean = sanitize_textarea_field( $value );
 		} else {
 			$clean = sanitize_text_field( $value );
 		}
 
 		return $this->submission_row( $field, $clean, $clean );
+	}
+
+	/**
+	 * Returns configured option choices for a field.
+	 *
+	 * @param array $field Field definition.
+	 * @return array<int,string>
+	 */
+	private function field_options( $field ) {
+		if ( ! empty( $field['options'] ) && is_array( $field['options'] ) ) {
+			return array_values(
+				array_filter(
+					array_map( 'sanitize_text_field', $field['options'] ),
+					function ( $option ) {
+						return '' !== $option;
+					}
+				)
+			);
+		}
+
+		return array();
 	}
 
 	/**
@@ -545,16 +593,25 @@ class Rest {
 			return new \WP_Error( 'turnstile_unavailable', __( 'Form protection is not configured. Please contact the site owner.', 'greenberry' ), array( 'status' => 503 ) );
 		}
 
-		$result = cfturnstile_check();
+		try {
+			$result = cfturnstile_check();
+		} catch ( \Throwable $error ) {
+			return new \WP_Error( 'turnstile_unavailable', __( 'Form protection is not configured. Please contact the site owner.', 'greenberry' ), array( 'status' => 503 ) );
+		}
+
 		if ( true === $result || ( is_array( $result ) && ! empty( $result['success'] ) ) ) {
 			return true;
 		}
 
-		if ( function_exists( 'cfturnstile_failed_text' ) ) {
-			$message = cfturnstile_failed_text();
-		} elseif ( function_exists( 'cfturnstile_error_message' ) ) {
-			$message = cfturnstile_error_message();
-		} else {
+		try {
+			if ( function_exists( 'cfturnstile_failed_text' ) ) {
+				$message = cfturnstile_failed_text();
+			} elseif ( function_exists( 'cfturnstile_error_message' ) ) {
+				$message = cfturnstile_error_message();
+			} else {
+				$message = __( 'Please complete the security check and try again.', 'greenberry' );
+			}
+		} catch ( \Throwable $error ) {
 			$message = __( 'Please complete the security check and try again.', 'greenberry' );
 		}
 

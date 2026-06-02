@@ -82,8 +82,6 @@ class Admin {
 		}
 
 		$settings   = $this->settings->get();
-		$logo_url   = $this->get_site_logo_url();
-		$site_name  = get_bloginfo( 'name' );
 		$providers  = $this->settings->providers();
 		$categories = get_terms(
 			array(
@@ -97,43 +95,39 @@ class Admin {
 				'hide_empty' => false,
 			)
 		);
+		\Greenberry\Admin_UI::open(
+			__( 'Social', 'greenberry' ),
+			__( 'Publish matching content to connected social channels with branded post copy and per-post controls.', 'greenberry' ),
+			'greenberry-social-admin'
+		);
+		$this->render_notice();
 		?>
-		<div class="wrap greenberry-admin greenberry-social-admin">
-			<h1><?php esc_html_e( 'Social', 'greenberry' ); ?></h1>
-			<?php $this->render_notice(); ?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="greenberry_social_save_settings">
+			<?php wp_nonce_field( 'greenberry_social_save_settings' ); ?>
 
-			<div class="greenberry-social-hero">
-				<div class="greenberry-social-brand">
-					<?php if ( $logo_url ) : ?>
-						<img src="<?php echo esc_url( $logo_url ); ?>" alt="">
-					<?php else : ?>
-						<span><?php echo esc_html( $this->get_site_initials( $site_name ) ); ?></span>
-					<?php endif; ?>
-				</div>
-				<div>
-					<p class="greenberry-eyebrow"><?php esc_html_e( 'Greenberry Social', 'greenberry' ); ?></p>
-					<h2><?php echo esc_html( $site_name ); ?></h2>
-					<p><?php esc_html_e( 'Publish matching content to connected social channels with branded post copy and editor-level controls.', 'greenberry' ); ?></p>
-				</div>
-			</div>
+			<div data-greenberry-tabs>
+				<nav class="nav-tab-wrapper" aria-label="<?php esc_attr_e( 'Social sections', 'greenberry' ); ?>">
+					<button type="button" class="nav-tab nav-tab-active" data-greenberry-tab="publishing"><?php esc_html_e( 'Publishing', 'greenberry' ); ?></button>
+					<button type="button" class="nav-tab" data-greenberry-tab="connections"><?php esc_html_e( 'Connections', 'greenberry' ); ?></button>
+					<button type="button" class="nav-tab" data-greenberry-tab="rules"><?php esc_html_e( 'Rules', 'greenberry' ); ?></button>
+					<button type="button" class="nav-tab" data-greenberry-tab="activity"><?php esc_html_e( 'Activity', 'greenberry' ); ?></button>
+				</nav>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="greenberry_social_save_settings">
-				<?php wp_nonce_field( 'greenberry_social_save_settings' ); ?>
+				<div class="greenberry-tab-panel" data-greenberry-panel="publishing">
+					<section class="greenberry-panel">
+						<h2><?php esc_html_e( 'Publishing', 'greenberry' ); ?></h2>
 
-				<div class="greenberry-social-layout">
-					<section class="greenberry-panel greenberry-social-section">
-						<div class="greenberry-section-heading">
-							<h2><?php esc_html_e( 'Publishing', 'greenberry' ); ?></h2>
-						</div>
-
-						<label class="greenberry-switch-row">
-							<input type="checkbox" name="enabled" value="1" <?php checked( ! empty( $settings['enabled'] ) ); ?>>
-							<span>
-								<strong><?php esc_html_e( 'Enable automatic social publishing', 'greenberry' ); ?></strong>
-								<small><?php esc_html_e( 'Newly published matching posts will be sent once.', 'greenberry' ); ?></small>
-							</span>
-						</label>
+						<?php
+						\Greenberry\Admin_UI::toggle(
+							array(
+								'name'    => 'enabled',
+								'checked' => ! empty( $settings['enabled'] ),
+								'label'   => __( 'Enable automatic social publishing', 'greenberry' ),
+								'help'    => __( 'Newly published matching posts are sent once, in the background.', 'greenberry' ),
+							)
+						);
+						?>
 
 						<div class="greenberry-field">
 							<label for="greenberry-social-template"><?php esc_html_e( 'Message template', 'greenberry' ); ?></label>
@@ -153,23 +147,22 @@ class Admin {
 							</div>
 						</div>
 					</section>
+				</div>
 
-					<section class="greenberry-panel greenberry-social-section">
-						<div class="greenberry-section-heading">
-							<h2><?php esc_html_e( 'Connections', 'greenberry' ); ?></h2>
-						</div>
-
+				<div class="greenberry-tab-panel" data-greenberry-panel="connections" hidden>
+					<section class="greenberry-panel">
+						<h2><?php esc_html_e( 'Connections', 'greenberry' ); ?></h2>
 						<div class="greenberry-social-provider-grid">
 							<?php $this->render_bluesky_card( $settings ); ?>
 							<?php $this->render_linkedin_card( $settings ); ?>
 						</div>
 					</section>
+				</div>
 
-					<section class="greenberry-panel greenberry-social-section">
-						<div class="greenberry-section-heading">
-							<h2><?php esc_html_e( 'Rules', 'greenberry' ); ?></h2>
-						</div>
-
+				<div class="greenberry-tab-panel" data-greenberry-panel="rules" hidden>
+					<section class="greenberry-panel">
+						<h2><?php esc_html_e( 'Rules', 'greenberry' ); ?></h2>
+						<p class="greenberry-muted"><?php esc_html_e( 'A post is published automatically when it matches the selected post types, and any selected categories or tags.', 'greenberry' ); ?></p>
 						<div class="greenberry-social-rules">
 							<div class="greenberry-field">
 								<label><?php esc_html_e( 'Post types', 'greenberry' ); ?></label>
@@ -194,19 +187,20 @@ class Admin {
 							</div>
 						</div>
 					</section>
+				</div>
 
-					<section class="greenberry-panel greenberry-social-section">
-						<div class="greenberry-section-heading">
-							<h2><?php esc_html_e( 'Activity', 'greenberry' ); ?></h2>
-						</div>
+				<div class="greenberry-tab-panel" data-greenberry-panel="activity" hidden>
+					<section class="greenberry-panel">
+						<h2><?php esc_html_e( 'Activity', 'greenberry' ); ?></h2>
 						<?php $this->render_log_table(); ?>
 					</section>
 				</div>
+			</div>
 
-				<?php submit_button( __( 'Save Social Settings', 'greenberry' ) ); ?>
-			</form>
-		</div>
+			<?php submit_button( __( 'Save Changes', 'greenberry' ) ); ?>
+		</form>
 		<?php
+		\Greenberry\Admin_UI::close();
 	}
 
 	/**
@@ -227,10 +221,15 @@ class Admin {
 				</div>
 			</div>
 
-			<label class="greenberry-switch-row">
-				<input type="checkbox" name="providers[bluesky][enabled]" value="1" <?php checked( ! empty( $config['enabled'] ) ); ?>>
-				<span><strong><?php esc_html_e( 'Enable Bluesky', 'greenberry' ); ?></strong></span>
-			</label>
+			<?php
+			\Greenberry\Admin_UI::toggle(
+				array(
+					'name'    => 'providers[bluesky][enabled]',
+					'checked' => ! empty( $config['enabled'] ),
+					'label'   => __( 'Enable Bluesky', 'greenberry' ),
+				)
+			);
+			?>
 
 			<div class="greenberry-field">
 				<label for="greenberry-bluesky-identifier"><?php esc_html_e( 'Handle or DID', 'greenberry' ); ?></label>
@@ -269,10 +268,15 @@ class Admin {
 				</div>
 			</div>
 
-			<label class="greenberry-switch-row">
-				<input type="checkbox" name="providers[linkedin][enabled]" value="1" <?php checked( ! empty( $config['enabled'] ) ); ?>>
-				<span><strong><?php esc_html_e( 'Enable LinkedIn', 'greenberry' ); ?></strong></span>
-			</label>
+			<?php
+			\Greenberry\Admin_UI::toggle(
+				array(
+					'name'    => 'providers[linkedin][enabled]',
+					'checked' => ! empty( $config['enabled'] ),
+					'label'   => __( 'Enable LinkedIn', 'greenberry' ),
+				)
+			);
+			?>
 
 			<div class="greenberry-field">
 				<label for="greenberry-linkedin-token"><?php esc_html_e( 'Access token', 'greenberry' ); ?></label>
@@ -426,48 +430,5 @@ class Admin {
 			)
 		);
 		exit;
-	}
-
-	/**
-	 * Gets a logo URL.
-	 *
-	 * @return string
-	 */
-	private function get_site_logo_url() {
-		$custom_logo_id = absint( get_theme_mod( 'custom_logo' ) );
-		if ( $custom_logo_id ) {
-			$logo = wp_get_attachment_image_url( $custom_logo_id, 'thumbnail' );
-			if ( $logo ) {
-				return $logo;
-			}
-		}
-
-		$site_icon = get_site_icon_url( 96 );
-
-		return $site_icon ? $site_icon : '';
-	}
-
-	/**
-	 * Gets initials for a logo fallback.
-	 *
-	 * @param string $site_name Site name.
-	 * @return string
-	 */
-	private function get_site_initials( $site_name ) {
-		$words = preg_split( '/\s+/', trim( $site_name ) );
-		$initials = '';
-
-		foreach ( $words as $word ) {
-			if ( '' === $word ) {
-				continue;
-			}
-
-			$initials .= strtoupper( substr( $word, 0, 1 ) );
-			if ( 2 <= strlen( $initials ) ) {
-				break;
-			}
-		}
-
-		return '' !== $initials ? $initials : 'G';
 	}
 }

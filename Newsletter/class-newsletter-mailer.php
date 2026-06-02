@@ -67,6 +67,118 @@ class Mailer {
 	}
 
 	/**
+	 * Sends a block-editor campaign post to its list.
+	 *
+	 * @param int $post_id Campaign post ID.
+	 * @return array{sent:int,total:int}|\WP_Error
+	 */
+	public function send_campaign_post( $post_id ) {
+		$post = get_post( $post_id );
+		if ( ! $post || Campaign_Post_Type::POST_TYPE !== $post->post_type ) {
+			return array(
+				'sent'  => 0,
+				'total' => 0,
+			);
+		}
+
+		if ( '' !== (string) get_post_meta( $post_id, Campaign_Post_Type::META_SENT_AT, true ) ) {
+			return array(
+				'sent'  => 0,
+				'total' => 0,
+			);
+		}
+
+		$content = $this->render_campaign_content( $post );
+		if ( is_wp_error( $content ) ) {
+			return $content;
+		}
+
+		$result = $this->send_to_list(
+			absint( get_post_meta( $post_id, Campaign_Post_Type::META_LIST_ID, true ) ),
+			$this->campaign_subject( $post ),
+			(string) get_post_meta( $post_id, Campaign_Post_Type::META_PREHEADER, true ),
+			$content
+		);
+
+		if ( $result['sent'] > 0 ) {
+			update_post_meta( $post_id, Campaign_Post_Type::META_SENT_AT, current_time( 'mysql' ) );
+			update_post_meta( $post_id, Campaign_Post_Type::META_SENT_COUNT, absint( $result['sent'] ) );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Sends a block-editor campaign post to one test recipient.
+	 *
+	 * @param int    $post_id Campaign post ID.
+	 * @param string $recipient Test recipient email.
+	 * @return true|\WP_Error
+	 */
+	public function send_test_campaign_post( $post_id, $recipient ) {
+		$recipient = sanitize_email( $recipient );
+		if ( ! is_email( $recipient ) ) {
+			return new \WP_Error( 'invalid_test_recipient', __( 'Please enter a valid test recipient email address.', 'greenberry' ) );
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post || Campaign_Post_Type::POST_TYPE !== $post->post_type ) {
+			return new \WP_Error( 'campaign_not_found', __( 'That campaign could not be found.', 'greenberry' ) );
+		}
+
+		$content = $this->render_campaign_content( $post );
+		if ( is_wp_error( $content ) ) {
+			return $content;
+		}
+
+		$subject = $this->campaign_subject( $post );
+		$html    = $this->template->render(
+			$subject,
+			(string) get_post_meta( $post->ID, Campaign_Post_Type::META_PREHEADER, true ),
+			$content,
+			(object) array(
+				'id'    => 0,
+				'email' => $recipient,
+			)
+		);
+
+		$sent = $this->send_mail(
+			$recipient,
+			$subject,
+			$html,
+			array( 'Content-Type: text/html; charset=UTF-8' )
+		);
+
+		return $sent ? true : new \WP_Error( 'test_send_failed', __( 'The test email could not be sent.', 'greenberry' ) );
+	}
+
+	/**
+	 * Resolves a campaign subject, falling back to the post title.
+	 *
+	 * @param \WP_Post $post Campaign post.
+	 * @return string
+	 */
+	private function campaign_subject( $post ) {
+		$subject = trim( (string) get_post_meta( $post->ID, Campaign_Post_Type::META_SUBJECT, true ) );
+
+		return '' !== $subject ? $subject : get_the_title( $post );
+	}
+
+	/**
+	 * Renders campaign block content to email HTML.
+	 *
+	 * @param \WP_Post $post Campaign post.
+	 * @return string|\WP_Error
+	 */
+	private function render_campaign_content( $post ) {
+		try {
+			return do_blocks( $post->post_content );
+		} catch ( \Throwable $error ) {
+			return new \WP_Error( 'campaign_render_failed', __( 'The campaign content could not be rendered.', 'greenberry' ) );
+		}
+	}
+
+	/**
 	 * Sends a campaign draft to one test recipient without saving or marking sent.
 	 *
 	 * @param array  $data Campaign data.
@@ -96,7 +208,7 @@ class Mailer {
 			$contact
 		);
 
-		$sent = wp_mail(
+		$sent = $this->send_mail(
 			$recipient,
 			$subject,
 			$html,
@@ -123,7 +235,7 @@ class Mailer {
 		foreach ( $contacts as $contact ) {
 			$html = $this->template->render( $subject, $preheader, $content, $contact );
 
-			if ( wp_mail( $contact->email, $subject, $html, $headers ) ) {
+			if ( $this->send_mail( $contact->email, $subject, $html, $headers ) ) {
 				++$sent;
 			}
 		}
@@ -132,6 +244,24 @@ class Mailer {
 			'sent'  => $sent,
 			'total' => count( $contacts ),
 		);
+	}
+
+	/**
+	 * Sends mail without letting mailer plugins crash the admin request.
+	 *
+	 * @param string       $to          Recipient.
+	 * @param string       $subject     Subject.
+	 * @param string       $message     Message.
+	 * @param string|array $headers     Headers.
+	 * @param string|array $attachments Attachments.
+	 * @return bool
+	 */
+	private function send_mail( $to, $subject, $message, $headers = array(), $attachments = array() ) {
+		try {
+			return (bool) wp_mail( $to, $subject, $message, $headers, $attachments );
+		} catch ( \Throwable $error ) {
+			return false;
+		}
 	}
 
 	/**
@@ -158,7 +288,15 @@ class Mailer {
 				$automation->subject
 			);
 
-			$content = $this->build_post_content( $post );
+			$content = $this->compose_with_template(
+				$automation,
+				$this->build_posts_list( array( $post ) ),
+				$this->build_post_content( $post )
+			);
+			if ( is_wp_error( $content ) ) {
+				continue;
+			}
+
 			$this->send_to_list( absint( $automation->list_id ), $subject, '', $content );
 			$this->repository->mark_automation_sent( absint( $automation->id ) );
 		}
@@ -192,12 +330,16 @@ class Mailer {
 				$automation->subject
 			);
 
-			$this->send_to_list(
-				absint( $automation->list_id ),
-				$subject,
-				'',
+			$content = $this->compose_with_template(
+				$automation,
+				$this->build_posts_list( $posts ),
 				$this->build_digest_content( $posts )
 			);
+			if ( is_wp_error( $content ) ) {
+				continue;
+			}
+
+			$this->send_to_list( absint( $automation->list_id ), $subject, '', $content );
 
 			$this->repository->mark_automation_sent( absint( $automation->id ) );
 		}
@@ -268,14 +410,29 @@ class Mailer {
 	}
 
 	/**
-	 * Builds digest content.
+	 * Builds the default digest content (heading plus the posts list).
 	 *
 	 * @param array<int,\WP_Post> $posts Posts.
 	 * @return string
 	 */
 	private function build_digest_content( $posts ) {
-		$html  = '<h1 style="font-size:28px;line-height:1.2;margin:0 0 20px 0;">' . esc_html__( 'Latest updates', 'greenberry' ) . '</h1>';
-		$html .= '<div>';
+		return '<h1 style="font-size:28px;line-height:1.2;margin:0 0 20px 0;">'
+			. esc_html__( 'Latest updates', 'greenberry' )
+			. '</h1>'
+			. $this->build_posts_list( $posts );
+	}
+
+	/**
+	 * Renders a list of posts as email-friendly article blocks.
+	 *
+	 * Used both as the default digest body and as the {posts} replacement when
+	 * an automation uses a reusable template.
+	 *
+	 * @param array<int,\WP_Post> $posts Posts.
+	 * @return string
+	 */
+	private function build_posts_list( $posts ) {
+		$html = '';
 
 		foreach ( $posts as $post ) {
 			$excerpt = has_excerpt( $post )
@@ -283,15 +440,48 @@ class Mailer {
 				: wp_trim_words( wp_strip_all_tags( $post->post_content ), 28 );
 
 			$html .= sprintf(
-				'<article style="border-top:1px solid #e2e4e7;padding:18px 0;"><h2 style="font-size:20px;line-height:1.3;margin:0 0 8px 0;"><a href="%1$s" style="color:#1d2327;text-decoration:none;">%2$s</a></h2><p style="margin:0;color:#50575e;">%3$s</p></article>',
+				'<article style="border-top:1px solid #e2e4e7;padding:18px 0;"><h2 style="font-size:20px;line-height:1.3;margin:0 0 8px 0;"><a href="%1$s" style="color:#1d2327;text-decoration:none;">%2$s</a></h2><p style="margin:0 0 12px;color:#50575e;">%3$s</p><p style="margin:0;"><a href="%1$s" style="background:#1d2327;border-radius:4px;color:#ffffff;display:inline-block;padding:9px 14px;text-decoration:none;">%4$s</a></p></article>',
 				esc_url( get_permalink( $post ) ),
 				esc_html( get_the_title( $post ) ),
-				esc_html( $excerpt )
+				esc_html( $excerpt ),
+				esc_html__( 'Read more', 'greenberry' )
 			);
 		}
 
-		$html .= '</div>';
-
 		return $html;
+	}
+
+	/**
+	 * Renders an automation's email, using its reusable template when set.
+	 *
+	 * @param object $automation Automation row.
+	 * @param string $posts_html Rendered posts list for the {posts} token.
+	 * @param string $default_html Body to use when no template is configured.
+	 * @return string|\WP_Error
+	 */
+	private function compose_with_template( $automation, $posts_html, $default_html ) {
+		$template_id = $this->repository->get_automation_template_id( $automation );
+
+		if ( $template_id ) {
+			$rendered = Email_Template_Post_Type::render_content(
+				$template_id,
+				array(
+					'{posts}'     => $posts_html,
+					'{site_name}' => get_bloginfo( 'name' ),
+				)
+			);
+
+			if ( is_wp_error( $rendered ) ) {
+				return $rendered;
+			}
+
+			if ( null !== $rendered && '' !== trim( $rendered ) ) {
+				return $rendered;
+			}
+
+			return new \WP_Error( 'template_render_failed', __( 'The email template could not be rendered.', 'greenberry' ) );
+		}
+
+		return $default_html;
 	}
 }

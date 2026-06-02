@@ -1,5 +1,5 @@
 ( function ( wp, data ) {
-	if ( ! wp || ! wp.plugins || ! ( wp.editPost || wp.editor ) || ! wp.data ) {
+	if ( ! wp || ! wp.plugins || ! ( wp.editor || wp.editPost ) || ! wp.data ) {
 		return;
 	}
 
@@ -8,7 +8,7 @@
 	var __ = wp.i18n.__;
 	var sprintf = wp.i18n.sprintf;
 	var registerPlugin = wp.plugins.registerPlugin;
-	var editPost = wp.editPost || wp.editor;
+	var editPost = wp.editor || wp.editPost;
 	var PluginDocumentSettingPanel = editPost.PluginDocumentSettingPanel;
 	var PluginPrePublishPanel = editPost.PluginPrePublishPanel;
 	var Button = wp.components.Button;

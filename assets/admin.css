@@ -1,22 +1,115 @@
+/**
+ * Greenberry admin styles.
+ *
+ * One shared design system for every module settings screen:
+ * tokens, page header, panels, fields, toggle switch, tables, and the
+ * module dashboard. Module-specific blocks live at the end.
+ */
+
+/* -----------------------------------------------------------------------------
+ * Design tokens
+ * -------------------------------------------------------------------------- */
 .greenberry-admin {
-	--greenberry-surface: var(--wp--preset--color--base, #ffffff);
-	--greenberry-surface-muted: var(--wp--preset--color--base-2, #f6f7f7);
-	--greenberry-border: color-mix(in srgb, var(--wp--preset--color--contrast, #1d2327) 14%, transparent);
-	--greenberry-text-muted: var(--wp--preset--color--contrast-2, #646970);
-	--greenberry-accent: var(--wp--preset--color--accent, #2271b1);
+	--gb-surface: #ffffff;
+	--gb-surface-muted: #f6f7f7;
+	--gb-border: #e2e4e7;
+	--gb-border-strong: #c9ccd1;
+	--gb-text: #1d2327;
+	--gb-text-muted: #646970;
+	--gb-accent: var(--wp--preset--color--accent, #2271b1);
+	--gb-accent-soft: color-mix(in srgb, var(--gb-accent) 12%, #ffffff);
+	--gb-radius: 10px;
+	--gb-radius-sm: 7px;
+	--gb-shadow: 0 1px 2px rgba(29, 35, 39, 0.06);
+	--gb-shadow-lg: 0 10px 34px rgba(29, 35, 39, 0.12);
 }
 
+.greenberry-admin .description {
+	color: var(--gb-text-muted);
+}
+
+/* -----------------------------------------------------------------------------
+ * Page header
+ * -------------------------------------------------------------------------- */
+.greenberry-header {
+	align-items: center;
+	background: var(--gb-surface);
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius);
+	box-shadow: var(--gb-shadow);
+	display: flex;
+	gap: 16px;
+	margin: 16px 0 20px;
+	padding: 18px 20px;
+}
+
+.greenberry-header__mark {
+	align-items: center;
+	background: linear-gradient(135deg, var(--gb-accent), color-mix(in srgb, var(--gb-accent) 70%, #111));
+	border-radius: 12px;
+	color: #fff;
+	display: flex;
+	flex: 0 0 52px;
+	height: 52px;
+	justify-content: center;
+	width: 52px;
+}
+
+.greenberry-header__mark svg {
+	height: 30px;
+	width: 30px;
+}
+
+.greenberry-header__text {
+	min-width: 0;
+}
+
+.greenberry-header__eyebrow {
+	color: var(--gb-accent);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	margin: 0;
+	text-transform: uppercase;
+}
+
+.greenberry-header__title {
+	font-size: 22px;
+	line-height: 1.2;
+	margin: 2px 0 0;
+	padding: 0;
+}
+
+.greenberry-header__desc {
+	color: var(--gb-text-muted);
+	margin: 4px 0 0;
+	max-width: 70ch;
+}
+
+/* -----------------------------------------------------------------------------
+ * Panels & layout grids
+ * -------------------------------------------------------------------------- */
 .greenberry-admin .greenberry-panel {
-	background: var(--greenberry-surface);
-	border: 1px solid var(--greenberry-border);
-	border-radius: 8px;
+	background: var(--gb-surface);
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius);
+	box-shadow: var(--gb-shadow);
 	margin-top: 16px;
-	padding: 20px;
+	padding: 22px;
+}
+
+.greenberry-admin .greenberry-panel:first-of-type {
+	margin-top: 0;
 }
 
 .greenberry-admin .greenberry-panel > h2:first-child,
+.greenberry-admin .greenberry-panel > h3:first-child,
 .greenberry-admin .greenberry-section > h3:first-child {
 	margin-top: 0;
+}
+
+.greenberry-admin .greenberry-panel h2 {
+	font-size: 16px;
 }
 
 .greenberry-admin .greenberry-grid {
@@ -25,33 +118,104 @@
 	grid-template-columns: minmax(0, 1fr);
 }
 
+.greenberry-admin .greenberry-grid > .greenberry-panel {
+	margin-top: 0;
+}
+
 @media (min-width: 960px) {
 	.greenberry-admin .greenberry-grid {
 		grid-template-columns: 360px minmax(0, 1fr);
 	}
+
+	.greenberry-admin .greenberry-grid--forms {
+		grid-template-columns: 340px minmax(0, 1fr);
+	}
+
+	.greenberry-admin .greenberry-grid--admin-colours {
+		grid-template-columns: 320px minmax(0, 1fr);
+	}
+
+	.greenberry-admin .greenberry-grid--featured-image {
+		grid-template-columns: 320px minmax(0, 1fr);
+	}
 }
 
+.greenberry-admin .greenberry-grid--forms,
+.greenberry-admin .greenberry-grid--admin-colours,
+.greenberry-admin .greenberry-grid--featured-image {
+	align-items: start;
+}
+
+.greenberry-admin .greenberry-section {
+	border-top: 1px solid var(--gb-border);
+	margin-top: 18px;
+	padding-top: 18px;
+}
+
+.greenberry-admin .greenberry-section:first-of-type {
+	border-top: 0;
+	margin-top: 0;
+	padding-top: 0;
+}
+
+.greenberry-admin .greenberry-section.is-disabled {
+	opacity: 0.55;
+}
+
+.greenberry-admin .greenberry-section-heading {
+	align-items: center;
+	display: flex;
+	gap: 12px;
+	justify-content: space-between;
+	margin-bottom: 16px;
+}
+
+.greenberry-admin .greenberry-section-heading h2,
+.greenberry-admin .greenberry-section-heading h3 {
+	margin: 0;
+}
+
+/* -----------------------------------------------------------------------------
+ * Fields & forms
+ * -------------------------------------------------------------------------- */
 .greenberry-admin .greenberry-field {
-	margin-bottom: 12px;
+	margin-bottom: 16px;
 }
 
-.greenberry-admin .greenberry-field label {
+.greenberry-admin .greenberry-field > label {
 	display: block;
 	font-weight: 600;
-	margin-bottom: 4px;
+	margin-bottom: 5px;
+}
+
+.greenberry-admin label.greenberry-field {
+	align-items: flex-start;
+	display: flex;
+	font-weight: 400;
+	gap: 8px;
+}
+
+.greenberry-admin label.greenberry-field input {
+	margin-top: 2px;
 }
 
 .greenberry-admin .greenberry-field input[type="email"],
 .greenberry-admin .greenberry-field input[type="password"],
 .greenberry-admin .greenberry-field input[type="text"],
+.greenberry-admin .greenberry-field input[type="number"],
+.greenberry-admin .greenberry-field input[type="file"],
 .greenberry-admin .greenberry-field select,
 .greenberry-admin .greenberry-field textarea {
 	max-width: 100%;
 	width: 100%;
 }
 
+.greenberry-admin .greenberry-field .description {
+	margin-top: 5px;
+}
+
 .greenberry-admin .greenberry-muted {
-	color: var(--greenberry-text-muted);
+	color: var(--gb-text-muted);
 }
 
 .greenberry-admin .greenberry-actions {
@@ -61,85 +225,262 @@
 	gap: 8px;
 }
 
-.greenberry-admin .greenberry-badge {
-	background: var(--greenberry-surface-muted);
-	border-radius: 999px;
-	display: inline-block;
-	font-size: 12px;
-	line-height: 1;
-	margin: 0 3px 3px 0;
-	padding: 5px 8px;
-}
-
-.greenberry-admin .greenberry-grid--forms {
-	align-items: start;
-}
-
-@media (min-width: 960px) {
-	.greenberry-admin .greenberry-grid--forms {
-		grid-template-columns: 340px minmax(0, 1fr);
-	}
-}
-
-.greenberry-admin .greenberry-section {
-	border-top: 1px solid var(--greenberry-border);
-	margin-top: 18px;
-	padding-top: 14px;
-}
-
-.greenberry-admin .greenberry-section:first-of-type {
-	border-top: 0;
-	margin-top: 0;
-	padding-top: 0;
-}
-
-.greenberry-admin .greenberry-checkbox-field {
-	align-items: center;
-	display: flex;
-	gap: 8px;
-}
-
-.greenberry-admin .greenberry-checkbox-field input {
+.greenberry-admin .greenberry-inline-form {
+	display: inline;
 	margin: 0;
 }
 
-.greenberry-admin .greenberry-form-fields {
-	table-layout: fixed;
-}
-
-.greenberry-admin .greenberry-form-fields th:nth-child(1),
-.greenberry-admin .greenberry-form-fields th:nth-child(2) {
-	width: 15%;
-}
-
-.greenberry-admin .greenberry-form-fields th:nth-child(3),
-.greenberry-admin .greenberry-form-fields th:nth-child(4),
-.greenberry-admin .greenberry-form-fields th:nth-child(7) {
-	width: 10%;
-}
-
-.greenberry-admin .greenberry-form-fields th:nth-child(6) {
-	width: 16%;
-}
-
-.greenberry-admin .greenberry-form-fields input[type="number"],
-.greenberry-admin .greenberry-form-fields input[type="text"],
-.greenberry-admin .greenberry-form-fields select {
-	margin-bottom: 6px;
-	max-width: 100%;
-	width: 100%;
-}
-
-.greenberry-admin .greenberry-form-fields input[type="number"] {
-	width: 72px;
-}
-
 .greenberry-admin .greenberry-danger-zone {
-	border-top: 1px solid var(--greenberry-border);
-	margin-top: 16px;
-	padding-top: 16px;
+	border-top: 1px solid var(--gb-border);
+	margin-top: 20px;
+	padding-top: 18px;
 }
 
+/* -----------------------------------------------------------------------------
+ * Toggle switch
+ * -------------------------------------------------------------------------- */
+.greenberry-toggle {
+	align-items: center;
+	cursor: pointer;
+	display: flex;
+	gap: 12px;
+	margin: 0 0 16px;
+	position: relative;
+}
+
+.greenberry-toggle--compact {
+	margin: 0;
+}
+
+.greenberry-toggle input {
+	height: 1px;
+	margin: 0;
+	opacity: 0;
+	position: absolute;
+	width: 1px;
+}
+
+.greenberry-toggle__track {
+	background: var(--gb-border-strong);
+	border-radius: 999px;
+	flex: 0 0 auto;
+	height: 22px;
+	position: relative;
+	transition: background 0.15s ease;
+	width: 38px;
+}
+
+.greenberry-toggle__track::before {
+	background: #fff;
+	border-radius: 50%;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+	content: "";
+	height: 16px;
+	left: 3px;
+	position: absolute;
+	top: 3px;
+	transition: transform 0.15s ease;
+	width: 16px;
+}
+
+.greenberry-toggle input:checked + .greenberry-toggle__track {
+	background: var(--gb-accent);
+}
+
+.greenberry-toggle input:checked + .greenberry-toggle__track::before {
+	transform: translateX(16px);
+}
+
+.greenberry-toggle input:focus-visible + .greenberry-toggle__track {
+	box-shadow: 0 0 0 2px var(--gb-surface), 0 0 0 4px var(--gb-accent);
+}
+
+.greenberry-toggle__text strong {
+	display: block;
+	font-weight: 600;
+}
+
+.greenberry-toggle__text small {
+	color: var(--gb-text-muted);
+	display: block;
+	margin-top: 1px;
+}
+
+/* -----------------------------------------------------------------------------
+ * Badges, pills & status
+ * -------------------------------------------------------------------------- */
+.greenberry-admin .greenberry-badge,
+.greenberry-pill {
+	background: var(--gb-surface-muted);
+	border: 1px solid var(--gb-border);
+	border-radius: 999px;
+	color: var(--gb-text-muted);
+	display: inline-block;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1;
+	margin: 0 4px 4px 0;
+	padding: 5px 9px;
+}
+
+.greenberry-pill.is-on {
+	background: color-mix(in srgb, var(--wp--preset--color--accent-3, #00a32a) 14%, #fff);
+	border-color: transparent;
+	color: #0a6b2d;
+}
+
+.greenberry-status {
+	background: var(--gb-surface-muted);
+	border-radius: 999px;
+	color: var(--gb-text-muted);
+	display: inline-block;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1;
+	padding: 5px 9px;
+}
+
+.greenberry-status.is-ready {
+	background: color-mix(in srgb, var(--wp--preset--color--accent-3, #00a32a) 16%, #fff);
+	color: #0a6b2d;
+}
+
+.greenberry-status.is-error {
+	background: #fcf0f1;
+	color: #8a2424;
+}
+
+/* -----------------------------------------------------------------------------
+ * Tables
+ * -------------------------------------------------------------------------- */
+.greenberry-admin .widefat {
+	border-color: var(--gb-border);
+	border-radius: var(--gb-radius-sm);
+	overflow: hidden;
+}
+
+.greenberry-admin .widefat thead th {
+	font-weight: 600;
+}
+
+/* -----------------------------------------------------------------------------
+ * In-page tabs
+ * -------------------------------------------------------------------------- */
+.greenberry-admin .nav-tab-wrapper {
+	margin-bottom: 16px;
+}
+
+.greenberry-admin button.nav-tab {
+	background: transparent;
+	cursor: pointer;
+	font: inherit;
+}
+
+.greenberry-admin button.nav-tab.nav-tab-active {
+	background: var(--gb-surface);
+}
+
+.greenberry-tab-panel > .greenberry-panel:first-child {
+	margin-top: 0;
+}
+
+/* -----------------------------------------------------------------------------
+ * Module dashboard (main Greenberry screen)
+ * -------------------------------------------------------------------------- */
+.greenberry-modules {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	margin-bottom: 20px;
+}
+
+.greenberry-module-card {
+	background: var(--gb-surface);
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius);
+	box-shadow: var(--gb-shadow);
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 20px;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.greenberry-module-card.is-on {
+	border-color: color-mix(in srgb, var(--gb-accent) 40%, var(--gb-border));
+}
+
+.greenberry-module-card__head {
+	align-items: center;
+	display: flex;
+	gap: 12px;
+	justify-content: space-between;
+}
+
+.greenberry-module-card__head h2 {
+	font-size: 16px;
+	margin: 0;
+}
+
+.greenberry-module-card__desc {
+	color: var(--gb-text-muted);
+	flex: 1 1 auto;
+	margin: 0;
+}
+
+.greenberry-module-card__foot {
+	align-items: center;
+	display: flex;
+	gap: 10px;
+	justify-content: space-between;
+	margin-top: 4px;
+}
+
+.greenberry-modules__save {
+	margin: 0;
+}
+
+/* -----------------------------------------------------------------------------
+ * Checkbox grids (multi-select lists)
+ * -------------------------------------------------------------------------- */
+.greenberry-checkbox-grid {
+	display: grid;
+	gap: 8px 14px;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.greenberry-checkbox-grid--compact {
+	grid-template-columns: repeat(auto-fit, minmax(130px, max-content));
+}
+
+.greenberry-checkbox-grid--scroll {
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius-sm);
+	max-height: 190px;
+	overflow: auto;
+	padding: 12px;
+}
+
+.greenberry-checkbox-grid label {
+	align-items: center;
+	display: flex !important;
+	font-weight: 400 !important;
+	gap: 7px;
+	margin: 0 !important;
+}
+
+.greenberry-inline-check {
+	align-items: center;
+	color: var(--gb-text-muted);
+	display: flex !important;
+	font-weight: 400 !important;
+	gap: 6px;
+	margin-top: 8px !important;
+}
+
+/* -----------------------------------------------------------------------------
+ * Admin Colours
+ * -------------------------------------------------------------------------- */
 .greenberry-source-cards {
 	display: grid;
 	gap: 12px;
@@ -155,18 +496,19 @@
 
 .greenberry-source-card {
 	align-items: flex-start;
-	border: 1px solid var(--greenberry-border);
-	border-radius: 8px;
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius-sm);
 	cursor: pointer;
 	display: flex !important;
 	gap: 10px;
 	margin: 0 !important;
 	padding: 14px;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .greenberry-source-card:has(input:checked) {
-	border-color: var(--greenberry-accent);
-	box-shadow: inset 0 0 0 1px var(--greenberry-accent);
+	border-color: var(--gb-accent);
+	box-shadow: inset 0 0 0 1px var(--gb-accent);
 }
 
 .greenberry-source-card input {
@@ -179,380 +521,10 @@
 }
 
 .greenberry-source-card small {
-	color: var(--greenberry-text-muted);
+	color: var(--gb-text-muted);
 	font-weight: 400;
 	line-height: 1.4;
 	margin-top: 3px;
-}
-
-.greenberry-colour-fields {
-	display: grid;
-	gap: 14px 24px;
-	grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 960px) {
-	.greenberry-colour-fields {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-}
-
-.greenberry-section.is-disabled {
-	opacity: 0.62;
-}
-
-.greenberry-token-grid {
-	display: grid;
-	gap: 12px;
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.greenberry-token-card {
-	align-items: flex-start;
-	background: var(--greenberry-surface-muted);
-	border: 1px solid var(--greenberry-border);
-	border-radius: 8px;
-	display: grid;
-	gap: 8px;
-	grid-template-columns: 28px minmax(0, 1fr);
-	padding: 12px;
-}
-
-.greenberry-token-card small {
-	color: var(--greenberry-text-muted);
-	grid-column: 2;
-	line-height: 1.35;
-}
-
-.greenberry-colour-swatch {
-	border: 1px solid rgba(0, 0, 0, 0.16);
-	border-radius: 4px;
-	display: inline-block;
-	height: 24px;
-	width: 24px;
-}
-
-.greenberry-newsletter-composer__grid {
-	display: grid;
-	gap: 18px;
-	grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 1180px) {
-	.greenberry-newsletter-composer__grid {
-		grid-template-columns: minmax(0, 1fr) 360px;
-	}
-}
-
-.greenberry-newsletter-preview {
-	background: var(--greenberry-surface-muted);
-	border: 1px solid var(--greenberry-border);
-	border-radius: 8px;
-	overflow: hidden;
-}
-
-.greenberry-newsletter-preview__header {
-	background: var(--greenberry-surface);
-	border-bottom: 1px solid var(--greenberry-border);
-	display: grid;
-	gap: 5px;
-	padding: 14px;
-}
-
-.greenberry-newsletter-preview__header span {
-	color: var(--greenberry-accent);
-	font-size: 12px;
-	font-weight: 700;
-	text-transform: uppercase;
-}
-
-.greenberry-newsletter-preview__header strong,
-.greenberry-newsletter-preview__header small {
-	overflow-wrap: anywhere;
-}
-
-.greenberry-newsletter-preview__header small {
-	color: var(--greenberry-text-muted);
-}
-
-.greenberry-newsletter-preview__body {
-	background: #ffffff;
-	color: #1d2327;
-	font-size: 14px;
-	line-height: 1.55;
-	min-height: 220px;
-	padding: 16px;
-}
-
-.greenberry-newsletter-preview__body p {
-	margin: 0 0 12px;
-	overflow-wrap: anywhere;
-}
-
-.greenberry-social-hero {
-	align-items: center;
-	background: var(--wp--preset--color--base, #ffffff);
-	border: 1px solid color-mix(in srgb, var(--wp--preset--color--contrast, #1d2327) 12%, transparent);
-	border-left: 4px solid var(--wp--preset--color--accent, #2271b1);
-	border-radius: 8px;
-	display: flex;
-	gap: 18px;
-	margin: 16px 0;
-	padding: 18px;
-}
-
-.greenberry-social-hero h2 {
-	font-size: 24px;
-	line-height: 1.2;
-	margin: 0 0 6px;
-}
-
-.greenberry-social-hero p {
-	color: var(--wp--preset--color--contrast-2, #646970);
-	margin: 0;
-	max-width: 760px;
-}
-
-.greenberry-social-brand {
-	align-items: center;
-	background: var(--wp--preset--color--accent, #2271b1);
-	border-radius: 8px;
-	color: var(--wp--preset--color--base, #ffffff);
-	display: flex;
-	flex: 0 0 64px;
-	font-size: 18px;
-	font-weight: 700;
-	height: 64px;
-	justify-content: center;
-	overflow: hidden;
-	width: 64px;
-}
-
-.greenberry-social-brand img {
-	display: block;
-	height: 100%;
-	object-fit: cover;
-	width: 100%;
-}
-
-.greenberry-module-hero {
-	align-items: center;
-	background: var(--wp--preset--color--base, #ffffff);
-	border: 1px solid color-mix(in srgb, var(--wp--preset--color--contrast, #1d2327) 12%, transparent);
-	border-left: 4px solid var(--wp--preset--color--accent, #2271b1);
-	border-radius: 8px;
-	display: flex;
-	gap: 18px;
-	margin: 16px 0;
-	padding: 18px;
-}
-
-.greenberry-module-hero h2 {
-	font-size: 24px;
-	line-height: 1.2;
-	margin: 0 0 6px;
-}
-
-.greenberry-module-hero p {
-	color: var(--wp--preset--color--contrast-2, #646970);
-	margin: 0;
-	max-width: 760px;
-}
-
-.greenberry-module-brand {
-	align-items: center;
-	background: var(--wp--preset--color--accent, #2271b1);
-	border-radius: 8px;
-	color: var(--wp--preset--color--base, #ffffff);
-	display: flex;
-	flex: 0 0 64px;
-	font-size: 18px;
-	font-weight: 700;
-	height: 64px;
-	justify-content: center;
-	overflow: hidden;
-	width: 64px;
-}
-
-.greenberry-module-brand img {
-	display: block;
-	height: 100%;
-	object-fit: cover;
-	width: 100%;
-}
-
-.greenberry-eyebrow {
-	color: var(--wp--preset--color--accent, #2271b1) !important;
-	font-size: 12px;
-	font-weight: 700;
-	letter-spacing: 0;
-	margin: 0 0 4px !important;
-	text-transform: uppercase;
-}
-
-.greenberry-social-layout {
-	display: grid;
-	gap: 16px;
-}
-
-.greenberry-social-section {
-	margin-top: 0;
-}
-
-.greenberry-section-heading {
-	align-items: center;
-	display: flex;
-	gap: 12px;
-	justify-content: space-between;
-	margin-bottom: 14px;
-}
-
-.greenberry-section-heading h2,
-.greenberry-social-provider h3 {
-	margin: 0;
-}
-
-.greenberry-switch-row {
-	align-items: flex-start;
-	display: flex;
-	gap: 10px;
-	margin: 0 0 14px;
-}
-
-.greenberry-switch-row input {
-	margin-top: 2px;
-}
-
-.greenberry-switch-row small {
-	color: #646970;
-	display: block;
-	margin-top: 2px;
-}
-
-.greenberry-social-provider-grid {
-	display: grid;
-	gap: 14px;
-	grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 960px) {
-	.greenberry-social-provider-grid {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-}
-
-.greenberry-social-provider {
-	border: 1px solid #dcdcde;
-	border-radius: 8px;
-	padding: 14px;
-}
-
-.greenberry-social-provider__header {
-	align-items: center;
-	display: flex;
-	justify-content: space-between;
-	margin-bottom: 12px;
-}
-
-.greenberry-status {
-	background: #f0f0f1;
-	border-radius: 999px;
-	color: #50575e;
-	display: inline-block;
-	font-size: 12px;
-	font-weight: 600;
-	line-height: 1;
-	padding: 5px 8px;
-}
-
-.greenberry-status.is-ready {
-	background: color-mix(in srgb, var(--wp--preset--color--accent-3, #00a32a) 16%, #ffffff);
-	color: #006b2d;
-}
-
-.greenberry-status.is-error {
-	background: #fcf0f1;
-	color: #8a2424;
-}
-
-.greenberry-inline-check {
-	align-items: center;
-	color: #646970;
-	display: flex !important;
-	font-weight: 400 !important;
-	gap: 6px;
-	margin-top: 6px !important;
-}
-
-.greenberry-checkbox-grid {
-	display: grid;
-	gap: 8px 14px;
-	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-}
-
-.greenberry-checkbox-grid--compact {
-	grid-template-columns: repeat(auto-fit, minmax(130px, max-content));
-}
-
-.greenberry-checkbox-grid--scroll {
-	border: 1px solid #dcdcde;
-	border-radius: 6px;
-	max-height: 190px;
-	overflow: auto;
-	padding: 10px;
-}
-
-.greenberry-checkbox-grid label {
-	align-items: center;
-	display: flex !important;
-	font-weight: 400 !important;
-	gap: 7px;
-	margin: 0 !important;
-}
-
-.greenberry-social-rules {
-	display: grid;
-	gap: 8px 18px;
-	grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 1100px) {
-	.greenberry-social-rules {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
-}
-
-@media (max-width: 600px) {
-	.greenberry-social-hero {
-		align-items: flex-start;
-		flex-direction: column;
-	}
-
-	.greenberry-module-hero {
-		align-items: flex-start;
-		flex-direction: column;
-	}
-}
-
-.greenberry-admin .greenberry-grid--admin-colours {
-	align-items: start;
-}
-
-@media (min-width: 960px) {
-	.greenberry-admin .greenberry-grid--admin-colours {
-		grid-template-columns: 320px minmax(0, 1fr);
-	}
-}
-
-.greenberry-admin .greenberry-radio-field {
-	align-items: center;
-	display: flex;
-	gap: 8px;
-	margin-bottom: 8px;
-}
-
-.greenberry-admin .greenberry-radio-field input {
-	margin: 0;
 }
 
 .greenberry-admin .greenberry-colour-fields {
@@ -574,8 +546,8 @@
 
 .greenberry-admin .greenberry-admin-colour-preview {
 	background: var(--preview-bg);
-	border: 1px solid #dcdcde;
-	border-radius: 6px;
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius-sm);
 	min-height: 170px;
 	overflow: hidden;
 }
@@ -612,45 +584,159 @@
 	height: 22px;
 }
 
-.greenberry-admin .greenberry-colour-swatch {
-	border: 1px solid #dcdcde;
-	border-radius: 50%;
-	display: inline-block;
-	height: 16px;
-	margin-right: 6px;
-	vertical-align: -3px;
-	width: 16px;
+.greenberry-token-grid {
+	display: grid;
+	gap: 12px;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.greenberry-admin .greenberry-admin-colours-presets code {
+.greenberry-token-card {
+	align-items: flex-start;
+	background: var(--gb-surface-muted);
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius-sm);
+	display: grid;
+	gap: 8px;
+	grid-template-columns: 28px minmax(0, 1fr);
+	padding: 12px;
+}
+
+.greenberry-token-card small {
+	color: var(--gb-text-muted);
+	grid-column: 2;
+	line-height: 1.35;
+}
+
+.greenberry-token-card code {
 	white-space: nowrap;
 }
 
-.greenberry-admin .greenberry-token-card .greenberry-colour-swatch {
+.greenberry-colour-swatch {
+	border: 1px solid rgba(0, 0, 0, 0.16);
 	border-radius: 4px;
+	display: inline-block;
+	height: 24px;
+	width: 24px;
+}
+
+.greenberry-token-card .greenberry-colour-swatch {
 	height: 24px;
 	margin: 0;
 	width: 24px;
 }
 
-.greenberry-admin .greenberry-grid--featured-image {
-	align-items: start;
+/* -----------------------------------------------------------------------------
+ * Newsletter composer & preview
+ * -------------------------------------------------------------------------- */
+.greenberry-newsletter-composer__grid {
+	display: grid;
+	gap: 18px;
+	grid-template-columns: minmax(0, 1fr);
 }
 
-@media (min-width: 960px) {
-	.greenberry-admin .greenberry-grid--featured-image {
-		grid-template-columns: 320px minmax(0, 1fr);
+@media (min-width: 1180px) {
+	.greenberry-newsletter-composer__grid {
+		grid-template-columns: minmax(0, 1fr) 360px;
 	}
 }
 
-.greenberry-admin .greenberry-featured-image-table {
-	table-layout: fixed;
+.greenberry-newsletter-preview {
+	background: var(--gb-surface-muted);
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius-sm);
+	overflow: hidden;
 }
 
-.greenberry-admin .greenberry-featured-image-table th:first-child {
-	width: 34%;
+.greenberry-newsletter-preview__header {
+	background: var(--gb-surface);
+	border-bottom: 1px solid var(--gb-border);
+	display: grid;
+	gap: 5px;
+	padding: 14px;
 }
 
+.greenberry-newsletter-preview__header span {
+	color: var(--gb-accent);
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.greenberry-newsletter-preview__header strong,
+.greenberry-newsletter-preview__header small,
+.greenberry-newsletter-preview__body p {
+	overflow-wrap: anywhere;
+}
+
+.greenberry-newsletter-preview__header small {
+	color: var(--gb-text-muted);
+}
+
+.greenberry-newsletter-preview__body {
+	background: #fff;
+	color: var(--gb-text);
+	font-size: 14px;
+	line-height: 1.55;
+	min-height: 220px;
+	padding: 16px;
+}
+
+.greenberry-newsletter-preview__body p {
+	margin: 0 0 12px;
+}
+
+/* -----------------------------------------------------------------------------
+ * Social
+ * -------------------------------------------------------------------------- */
+.greenberry-social-layout {
+	display: grid;
+	gap: 16px;
+}
+
+.greenberry-social-provider-grid {
+	display: grid;
+	gap: 14px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 960px) {
+	.greenberry-social-provider-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+.greenberry-social-provider {
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius-sm);
+	padding: 16px;
+}
+
+.greenberry-social-provider__header {
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 14px;
+}
+
+.greenberry-social-provider h3 {
+	margin: 0 0 4px;
+}
+
+.greenberry-social-rules {
+	display: grid;
+	gap: 8px 18px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1100px) {
+	.greenberry-social-rules {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+/* -----------------------------------------------------------------------------
+ * Image picker & media field (Category Featured Image, Admin Login)
+ * -------------------------------------------------------------------------- */
 .greenberry-admin .greenberry-image-picker {
 	align-items: center;
 	display: flex;
@@ -660,10 +746,10 @@
 
 .greenberry-admin .greenberry-image-picker__preview {
 	align-items: center;
-	background: var(--wp--preset--color--base-2, #f6f7f7);
-	border: 1px solid #dcdcde;
-	border-radius: 6px;
-	color: #646970;
+	background: var(--gb-surface-muted);
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius-sm);
+	color: var(--gb-text-muted);
 	display: flex;
 	font-size: 12px;
 	height: 64px;
@@ -699,47 +785,12 @@
 	display: none;
 }
 
-.greenberry-admin .greenberry-term-defaults {
-	display: grid;
-	gap: 10px;
+.greenberry-admin .greenberry-featured-image-table {
+	table-layout: fixed;
 }
 
-.greenberry-admin .greenberry-term-defaults__group {
-	border: 1px solid #dcdcde;
-	border-radius: 6px;
-	overflow: hidden;
-}
-
-.greenberry-admin .greenberry-term-defaults__group summary {
-	align-items: center;
-	background: var(--wp--preset--color--base-2, #f6f7f7);
-	cursor: pointer;
-	display: flex;
-	justify-content: space-between;
-	padding: 12px 14px;
-}
-
-.greenberry-admin .greenberry-term-defaults__group summary code {
-	margin-left: 8px;
-}
-
-.greenberry-admin .greenberry-term-defaults__group table,
-.greenberry-admin .greenberry-term-defaults__group > p {
-	margin: 12px;
-	width: calc(100% - 24px);
-}
-
-.greenberry-admin-login-layout {
-	align-items: start;
-	display: grid;
-	gap: 16px;
-	grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 1080px) {
-	.greenberry-admin-login-layout {
-		grid-template-columns: minmax(320px, 460px) minmax(0, 1fr);
-	}
+.greenberry-admin .greenberry-featured-image-table th:first-child {
+	width: 34%;
 }
 
 .greenberry-admin .greenberry-media-field {
@@ -749,10 +800,10 @@
 .greenberry-media-field__preview {
 	align-items: center;
 	aspect-ratio: 16 / 9;
-	background: #f6f7f7;
-	border: 1px dashed #c3c4c7;
-	border-radius: 6px;
-	color: #646970;
+	background: var(--gb-surface-muted);
+	border: 1px dashed var(--gb-border-strong);
+	border-radius: var(--gb-radius-sm);
+	color: var(--gb-text-muted);
 	display: flex;
 	justify-content: center;
 	margin-bottom: 10px;
@@ -770,18 +821,67 @@
 	padding: 18px;
 }
 
+/* -----------------------------------------------------------------------------
+ * Taxonomy term defaults (Category Featured Image)
+ * -------------------------------------------------------------------------- */
+.greenberry-admin .greenberry-term-defaults {
+	display: grid;
+	gap: 10px;
+}
+
+.greenberry-admin .greenberry-term-defaults__group {
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius-sm);
+	overflow: hidden;
+}
+
+.greenberry-admin .greenberry-term-defaults__group summary {
+	align-items: center;
+	background: var(--gb-surface-muted);
+	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
+	padding: 12px 14px;
+}
+
+.greenberry-admin .greenberry-term-defaults__group summary code {
+	margin-left: 8px;
+}
+
+.greenberry-admin .greenberry-term-defaults__group table,
+.greenberry-admin .greenberry-term-defaults__group > p {
+	margin: 12px;
+	width: calc(100% - 24px);
+}
+
+/* -----------------------------------------------------------------------------
+ * Admin Login preview
+ * -------------------------------------------------------------------------- */
+.greenberry-admin-login-layout {
+	align-items: start;
+	display: grid;
+	gap: 16px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1080px) {
+	.greenberry-admin-login-layout {
+		grid-template-columns: minmax(320px, 460px) minmax(0, 1fr);
+	}
+}
+
 .greenberry-admin-login-preview {
-	--greenberry-preview-base: var(--wp--preset--color--base, #ffffff);
-	--greenberry-preview-base-2: var(--wp--preset--color--base-2, #f6f7f7);
-	--greenberry-preview-contrast: var(--wp--preset--color--contrast, #1d2327);
-	--greenberry-preview-contrast-2: var(--wp--preset--color--contrast-2, #50575e);
-	--greenberry-preview-contrast-3: var(--wp--preset--color--contrast-3, #646970);
-	--greenberry-preview-accent: var(--wp--preset--color--accent, #2271b1);
-	background: var(--greenberry-preview-base-2);
+	--gb-preview-base: var(--wp--preset--color--base, #ffffff);
+	--gb-preview-base-2: var(--wp--preset--color--base-2, #f6f7f7);
+	--gb-preview-contrast: var(--wp--preset--color--contrast, #1d2327);
+	--gb-preview-contrast-2: var(--wp--preset--color--contrast-2, #50575e);
+	--gb-preview-contrast-3: var(--wp--preset--color--contrast-3, #646970);
+	--gb-preview-accent: var(--wp--preset--color--accent, #2271b1);
+	background: var(--gb-preview-base-2);
 	background-position: center;
 	background-size: cover;
-	border: 1px solid #dcdcde;
-	border-radius: 8px;
+	border: 1px solid var(--gb-border);
+	border-radius: var(--gb-radius);
 	display: flex;
 	justify-content: center;
 	min-height: 540px;
@@ -791,8 +891,7 @@
 }
 
 .greenberry-admin-login-preview::before {
-	background: rgba(246, 247, 247, 0.42);
-	background: color-mix(in srgb, var(--greenberry-preview-base-2) 42%, transparent);
+	background: color-mix(in srgb, var(--gb-preview-base-2) 42%, transparent);
 	content: "";
 	inset: 0;
 	position: absolute;
@@ -801,9 +900,9 @@
 .greenberry-admin-login-preview__card {
 	background: rgba(255, 255, 255, 0.94);
 	border: 1px solid rgba(29, 35, 39, 0.12);
-	border-radius: 8px;
-	box-shadow: 0 18px 52px rgba(29, 35, 39, 0.22);
-	color: var(--greenberry-preview-contrast);
+	border-radius: var(--gb-radius);
+	box-shadow: var(--gb-shadow-lg);
+	color: var(--gb-preview-contrast);
 	margin: auto;
 	max-width: 420px;
 	padding: 30px 36px;
@@ -813,10 +912,10 @@
 
 .greenberry-admin-login-preview__logo {
 	align-items: center;
-	background: var(--greenberry-preview-accent);
+	background: var(--gb-preview-accent);
 	border-radius: 50%;
 	box-shadow: 0 8px 26px rgba(29, 35, 39, 0.18);
-	color: var(--greenberry-preview-base);
+	color: var(--gb-preview-base);
 	display: flex;
 	font-size: 22px;
 	font-weight: 700;
@@ -834,10 +933,10 @@
 }
 
 .greenberry-admin-login-preview__message {
-	background: var(--greenberry-preview-base-2);
-	border-left: 4px solid var(--greenberry-preview-accent);
+	background: var(--gb-preview-base-2);
+	border-left: 4px solid var(--gb-preview-accent);
 	box-shadow: inset 0 -1px 0 rgba(29, 35, 39, 0.08);
-	color: var(--greenberry-preview-contrast-2);
+	color: var(--gb-preview-contrast-2);
 	font-size: 14px;
 	line-height: 1.5;
 	margin-bottom: 22px;
@@ -851,14 +950,14 @@
 }
 
 .greenberry-admin-login-preview__field span {
-	color: var(--greenberry-preview-contrast-2);
+	color: var(--gb-preview-contrast-2);
 	display: block;
 	font-weight: 600;
 	margin-bottom: 8px;
 }
 
 .greenberry-admin-login-preview__field i {
-	background: var(--greenberry-preview-base);
+	background: var(--gb-preview-base);
 	border: 1px solid rgba(29, 35, 39, 0.26);
 	border-radius: 6px;
 	display: block;
@@ -866,9 +965,9 @@
 }
 
 .greenberry-admin-login-preview__button {
-	background: var(--greenberry-preview-accent);
+	background: var(--gb-preview-accent);
 	border-radius: 6px;
-	color: var(--greenberry-preview-base);
+	color: var(--gb-preview-base);
 	font-weight: 700;
 	margin-top: 6px;
 	padding: 14px;
@@ -876,12 +975,53 @@
 }
 
 .greenberry-admin-login-preview__links {
-	color: var(--greenberry-preview-contrast-3);
+	color: var(--gb-preview-contrast-3);
 	margin-top: 24px;
 	text-align: center;
 }
 
+/* -----------------------------------------------------------------------------
+ * Forms field builder
+ * -------------------------------------------------------------------------- */
+.greenberry-admin .greenberry-form-fields {
+	table-layout: fixed;
+}
+
+.greenberry-admin .greenberry-form-fields th:nth-child(1),
+.greenberry-admin .greenberry-form-fields th:nth-child(2) {
+	width: 15%;
+}
+
+.greenberry-admin .greenberry-form-fields th:nth-child(3),
+.greenberry-admin .greenberry-form-fields th:nth-child(4),
+.greenberry-admin .greenberry-form-fields th:nth-child(7) {
+	width: 10%;
+}
+
+.greenberry-admin .greenberry-form-fields th:nth-child(6) {
+	width: 16%;
+}
+
+.greenberry-admin .greenberry-form-fields input[type="number"],
+.greenberry-admin .greenberry-form-fields input[type="text"],
+.greenberry-admin .greenberry-form-fields select {
+	margin-bottom: 6px;
+	max-width: 100%;
+	width: 100%;
+}
+
+.greenberry-admin .greenberry-form-fields input[type="number"] {
+	width: 72px;
+}
+
+/* -----------------------------------------------------------------------------
+ * Responsive
+ * -------------------------------------------------------------------------- */
 @media (max-width: 782px) {
+	.greenberry-header {
+		align-items: flex-start;
+	}
+
 	.greenberry-admin-login-preview {
 		min-height: 460px;
 		padding: 16px;

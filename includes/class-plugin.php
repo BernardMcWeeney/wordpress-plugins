@@ -27,15 +27,18 @@ class Plugin {
 	 */
 	private static function require_files() {
 		require_once GREENBERRY_PLUGIN_DIR . 'includes/class-modules.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'includes/class-admin-ui.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'includes/class-admin.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-repository.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-campaign-post-type.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-template-post-type.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-email-template.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-mailer.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-rest.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-blocks.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-admin.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-module.php';
-		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-repository.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-form-post-type.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-mailer.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-rest.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-blocks.php';

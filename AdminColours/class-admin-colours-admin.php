@@ -119,11 +119,12 @@ class Admin {
 		$colours       = $this->settings->get_colours();
 		$preset_tokens = $this->settings->get_preset_tokens();
 		$fields        = $this->settings->get_custom_colour_fields();
+		\Greenberry\Admin_UI::open(
+			__( 'Admin Colours', 'greenberry' ),
+			__( 'Apply a WordPress admin colour scheme from your theme palette or your own custom colours.', 'greenberry' )
+		);
+		$this->render_notice();
 		?>
-		<div class="wrap greenberry-admin">
-			<h1><?php esc_html_e( 'Admin Colours', 'greenberry' ); ?></h1>
-			<?php $this->render_notice(); ?>
-
 			<div class="greenberry-grid greenberry-grid--admin-colours">
 				<div class="greenberry-panel">
 					<h2><?php esc_html_e( 'Active Scheme', 'greenberry' ); ?></h2>
@@ -183,7 +184,7 @@ class Admin {
 							</div>
 						</div>
 
-						<?php submit_button( __( 'Save Admin Colours', 'greenberry' ) ); ?>
+						<?php submit_button( __( 'Save Changes', 'greenberry' ) ); ?>
 					</form>
 
 					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="greenberry-danger-zone">
@@ -215,8 +216,8 @@ class Admin {
 					<?php endforeach; ?>
 				</div>
 			</div>
-		</div>
 		<?php
+		\Greenberry\Admin_UI::close();
 	}
 
 	/**
