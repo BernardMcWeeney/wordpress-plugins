@@ -1,0 +1,245 @@
+body.login.greenberry-admin-login {
+	--greenberry-login-base: var(--wp--preset--color--base, #ffffff);
+	--greenberry-login-base-2: var(--wp--preset--color--base-2, #f6f7f7);
+	--greenberry-login-contrast: var(--wp--preset--color--contrast, #1d2327);
+	--greenberry-login-contrast-2: var(--wp--preset--color--contrast-2, #50575e);
+	--greenberry-login-contrast-3: var(--wp--preset--color--contrast-3, #646970);
+	--greenberry-login-accent: var(--wp--preset--color--accent, #2271b1);
+	--greenberry-login-accent-2: var(--wp--preset--color--accent-2, #3858e9);
+	--greenberry-login-danger: var(--wp--preset--color--accent-3, #d63638);
+	background: var(--greenberry-login-base-2);
+	box-sizing: border-box;
+	color: var(--greenberry-login-contrast);
+	display: grid;
+	margin: 0;
+	min-height: 100vh;
+	padding: 32px 16px;
+	place-items: center;
+}
+
+body.login.greenberry-admin-login *,
+body.login.greenberry-admin-login *::before,
+body.login.greenberry-admin-login *::after {
+	box-sizing: inherit;
+}
+
+body.login.greenberry-admin-login::before,
+body.login.greenberry-admin-login::after {
+	content: "";
+	inset: 0;
+	position: fixed;
+	pointer-events: none;
+}
+
+body.login.greenberry-admin-login::before {
+	background-image: var(--greenberry-admin-login-bg-image, none);
+	background-position: center;
+	background-size: cover;
+	z-index: -2;
+}
+
+body.login.greenberry-admin-login::after {
+	background: rgba(246, 247, 247, 0.42);
+	background: color-mix(in srgb, var(--greenberry-login-base-2) 42%, transparent);
+	z-index: -1;
+}
+
+body.login.greenberry-admin-login #login {
+	background: rgba(255, 255, 255, 0.94);
+	background: color-mix(in srgb, var(--greenberry-login-base) 94%, transparent);
+	border: 1px solid rgba(29, 35, 39, 0.12);
+	border: 1px solid color-mix(in srgb, var(--greenberry-login-contrast) 12%, transparent);
+	border-radius: 8px;
+	box-shadow: 0 22px 70px rgba(29, 35, 39, 0.2);
+	margin: 0;
+	padding: 36px 48px 30px;
+	width: min(520px, calc(100vw - 32px));
+}
+
+body.login.greenberry-admin-login h1 {
+	margin: 0 0 22px;
+}
+
+body.login.greenberry-admin-login h1 a {
+	background-image: var(--greenberry-admin-login-logo-image);
+	background-color: var(--greenberry-login-base);
+	background-position: center;
+	background-size: cover;
+	border-radius: 50%;
+	box-shadow: 0 8px 26px rgba(29, 35, 39, 0.2);
+	display: block;
+	height: 88px;
+	margin: 0 auto;
+	width: 88px;
+}
+
+body.login.greenberry-admin-login .greenberry-login-message {
+	background: rgba(246, 247, 247, 0.78);
+	background: color-mix(in srgb, var(--greenberry-login-base-2) 78%, var(--greenberry-login-base));
+	border-left: 4px solid var(--greenberry-login-accent);
+	box-shadow: inset 0 -1px 0 rgba(29, 35, 39, 0.08);
+	color: var(--greenberry-login-contrast-2);
+	font-size: 15px;
+	line-height: 1.6;
+	margin: 18px 0 10px;
+	padding: 16px 18px;
+	white-space: pre-line;
+}
+
+body.login.greenberry-admin-login .message,
+body.login.greenberry-admin-login .notice,
+body.login.greenberry-admin-login #login_error {
+	background: var(--greenberry-login-base);
+	border-left-color: var(--greenberry-login-accent);
+	box-shadow: none;
+	color: var(--greenberry-login-contrast-2);
+	margin: 0 0 18px;
+}
+
+body.login.greenberry-admin-login #login_error {
+	border-left-color: var(--greenberry-login-danger);
+}
+
+body.login.greenberry-admin-login form {
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+	margin: 24px 0 0;
+	overflow: visible;
+	padding: 0;
+}
+
+body.login.greenberry-admin-login label {
+	color: var(--greenberry-login-contrast-2);
+	font-size: 15px;
+	font-weight: 600;
+}
+
+body.login.greenberry-admin-login form .input,
+body.login.greenberry-admin-login input[type="text"],
+body.login.greenberry-admin-login input[type="password"],
+body.login.greenberry-admin-login input[type="email"] {
+	background: var(--greenberry-login-base);
+	border: 1px solid rgba(29, 35, 39, 0.28);
+	border: 1px solid color-mix(in srgb, var(--greenberry-login-contrast) 28%, transparent);
+	border-radius: 6px;
+	box-shadow: none;
+	color: var(--greenberry-login-contrast);
+	font-size: 18px;
+	line-height: 1.4;
+	min-height: 50px;
+	padding: 8px 12px;
+}
+
+body.login.greenberry-admin-login form .input:focus,
+body.login.greenberry-admin-login input[type="text"]:focus,
+body.login.greenberry-admin-login input[type="password"]:focus,
+body.login.greenberry-admin-login input[type="email"]:focus {
+	border-color: var(--greenberry-login-accent);
+	box-shadow: 0 0 0 1px var(--greenberry-login-accent);
+	outline: none;
+}
+
+body.login.greenberry-admin-login .button.wp-hide-pw {
+	color: var(--greenberry-login-accent-2);
+}
+
+body.login.greenberry-admin-login .forgetmenot {
+	float: none;
+	margin: 18px 0;
+}
+
+body.login.greenberry-admin-login .forgetmenot label {
+	align-items: center;
+	display: flex;
+	font-weight: 500;
+	gap: 8px;
+}
+
+body.login.greenberry-admin-login input[type="checkbox"] {
+	border-color: var(--greenberry-login-accent);
+	box-shadow: none;
+}
+
+body.login.greenberry-admin-login input[type="checkbox"]:checked {
+	background: var(--greenberry-login-accent);
+	border-color: var(--greenberry-login-accent);
+}
+
+body.login.greenberry-admin-login .submit {
+	margin: 0;
+}
+
+body.login.greenberry-admin-login .button-primary {
+	background: var(--greenberry-login-accent);
+	border: 0;
+	border-radius: 6px;
+	box-shadow: none;
+	color: var(--greenberry-login-base);
+	font-size: 16px;
+	font-weight: 700;
+	min-height: 52px;
+	text-shadow: none;
+	transition: background-color 160ms ease, transform 160ms ease;
+	width: 100%;
+}
+
+body.login.greenberry-admin-login .button-primary:hover,
+body.login.greenberry-admin-login .button-primary:focus {
+	background: var(--greenberry-login-accent-2);
+	box-shadow: none;
+	color: var(--greenberry-login-base);
+	transform: translateY(-1px);
+}
+
+body.login.greenberry-admin-login #nav,
+body.login.greenberry-admin-login #backtoblog,
+body.login.greenberry-admin-login .privacy-policy-page-link {
+	color: var(--greenberry-login-contrast-3);
+	font-size: 14px;
+	margin: 20px 0 0;
+	padding: 0;
+	text-align: center;
+}
+
+body.login.greenberry-admin-login #nav a,
+body.login.greenberry-admin-login #backtoblog a,
+body.login.greenberry-admin-login .privacy-policy-page-link a {
+	color: var(--greenberry-login-contrast-2);
+	text-decoration: none;
+}
+
+body.login.greenberry-admin-login #nav a:hover,
+body.login.greenberry-admin-login #backtoblog a:hover,
+body.login.greenberry-admin-login .privacy-policy-page-link a:hover,
+body.login.greenberry-admin-login #nav a:focus,
+body.login.greenberry-admin-login #backtoblog a:focus,
+body.login.greenberry-admin-login .privacy-policy-page-link a:focus {
+	color: var(--greenberry-login-accent);
+}
+
+body.login.greenberry-admin-login #language-switcher {
+	margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+	body.login.greenberry-admin-login {
+		align-items: start;
+		padding: 16px;
+	}
+
+	body.login.greenberry-admin-login #login {
+		padding: 28px 24px 24px;
+		width: min(100%, 420px);
+	}
+
+	body.login.greenberry-admin-login h1 a {
+		height: 72px;
+		width: 72px;
+	}
+
+	body.login.greenberry-admin-login .greenberry-login-message {
+		font-size: 14px;
+		padding: 14px 16px;
+	}
+}

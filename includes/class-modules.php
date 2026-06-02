@@ -27,6 +27,31 @@ class Modules {
 				'description' => __( 'Collect consented email subscribers, organize lists with tags, and send manual or automated email updates.', 'greenberry' ),
 				'default'     => true,
 			),
+			'forms'      => array(
+				'name'        => __( 'Forms', 'greenberry' ),
+				'description' => __( 'Create GDPR-aware forms that email submissions and attachments without storing responses.', 'greenberry' ),
+				'default'     => true,
+			),
+			'social'     => array(
+				'name'        => __( 'Social', 'greenberry' ),
+				'description' => __( 'Publish matching content to connected social channels with branded editor previews and per-post controls.', 'greenberry' ),
+				'default'     => true,
+			),
+			'admin_colours' => array(
+				'name'        => __( 'Admin Colours', 'greenberry' ),
+				'description' => __( 'Register and apply a WordPress administration color scheme from theme presets or custom colours.', 'greenberry' ),
+				'default'     => true,
+			),
+			'admin_login'   => array(
+				'name'        => __( 'Admin Login', 'greenberry' ),
+				'description' => __( 'Theme the WordPress login screen with block theme preset colours, a branded message, logo, and optional background image.', 'greenberry' ),
+				'default'     => true,
+			),
+			'category_featured_image' => array(
+				'name'        => __( 'Category Featured Image', 'greenberry' ),
+				'description' => __( 'Assign a fallback featured image from taxonomy terms, post types, or a global default when posts are saved without one.', 'greenberry' ),
+				'default'     => true,
+			),
 		);
 	}
 
@@ -106,6 +131,26 @@ class Modules {
 	public function load_active_modules() {
 		if ( $this->is_active( 'newsletter' ) ) {
 			\Greenberry\Newsletter\Module::init();
+		}
+
+		if ( $this->is_active( 'forms' ) ) {
+			\Greenberry\Forms\Module::init();
+		}
+
+		if ( $this->is_active( 'social' ) ) {
+			\Greenberry\Social\Module::init();
+		}
+
+		if ( $this->is_active( 'admin_colours' ) ) {
+			\Greenberry\AdminColours\Module::init();
+		}
+
+		if ( $this->is_active( 'admin_login' ) ) {
+			\Greenberry\AdminLogin\Module::init();
+		}
+
+		if ( $this->is_active( 'category_featured_image' ) ) {
+			\Greenberry\CategoryFeaturedImage\Module::init();
 		}
 	}
 }

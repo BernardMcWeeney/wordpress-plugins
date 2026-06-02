@@ -1,0 +1,208 @@
+/* Greenberry Admin Colours */
+:root {
+	--greenberry-admin-background: var(--wp--preset--color--base-2, #f1f1f1);
+	--greenberry-admin-menu-background: var(--wp--preset--color--contrast, #23282d);
+	--greenberry-admin-submenu-background: var(--wp--preset--color--contrast-3, #000000);
+	--greenberry-admin-menu-text: var(--wp--preset--color--base, #ffffff);
+	--greenberry-admin-accent: var(--wp--preset--color--accent, #2b5995);
+	--greenberry-admin-accent-hover: var(--wp--preset--color--accent-2, #04326e);
+	--greenberry-admin-accent-active: var(--wp--preset--color--accent-3, #113f7b);
+	--greenberry-admin-accent-soft: var(--wp--preset--color--accent-4, #4472ae);
+	--greenberry-admin-notification: var(--wp--preset--color--accent-5, #d54e21);
+	--greenberry-admin-on-accent: #ffffff;
+	--greenberry-admin-on-notification: #ffffff;
+}
+
+body {
+	background: var(--greenberry-admin-background);
+}
+
+a {
+	color: var(--greenberry-admin-accent);
+}
+
+a:hover,
+a:active,
+a:focus {
+	color: var(--greenberry-admin-accent-hover);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="color"]:focus,
+input[type="date"]:focus,
+input[type="datetime"]:focus,
+input[type="datetime-local"]:focus,
+input[type="email"]:focus,
+input[type="month"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="time"]:focus,
+input[type="url"]:focus,
+input[type="week"]:focus,
+input[type="checkbox"]:focus,
+input[type="radio"]:focus,
+select:focus,
+textarea:focus {
+	border-color: var(--greenberry-admin-accent);
+	box-shadow: 0 0 0 1px var(--greenberry-admin-accent);
+}
+
+input[type="radio"]:checked::before {
+	background: var(--greenberry-admin-accent);
+}
+
+.wp-core-ui .button,
+.wp-core-ui .button-secondary {
+	border-color: var(--greenberry-admin-accent);
+	color: var(--greenberry-admin-accent);
+}
+
+.wp-core-ui .button:hover,
+.wp-core-ui .button-secondary:hover,
+.wp-core-ui .button:focus,
+.wp-core-ui .button-secondary:focus {
+	border-color: var(--greenberry-admin-accent-hover);
+	color: var(--greenberry-admin-accent-hover);
+}
+
+.wp-core-ui .button-primary {
+	background: var(--greenberry-admin-accent);
+	border-color: var(--greenberry-admin-accent);
+	color: var(--greenberry-admin-on-accent);
+}
+
+.wp-core-ui .button-primary:hover,
+.wp-core-ui .button-primary:focus {
+	background: var(--greenberry-admin-accent-soft);
+	border-color: var(--greenberry-admin-accent-active);
+	color: var(--greenberry-admin-on-accent);
+}
+
+#adminmenuback,
+#adminmenuwrap,
+#adminmenu {
+	background: var(--greenberry-admin-menu-background);
+}
+
+#adminmenu a {
+	color: var(--greenberry-admin-menu-text);
+}
+
+#adminmenu div.wp-menu-image::before {
+	color: color-mix(in srgb, var(--greenberry-admin-menu-text) 70%, transparent);
+}
+
+#adminmenu a:hover,
+#adminmenu li.menu-top:hover,
+#adminmenu li.opensub > a.menu-top,
+#adminmenu li > a.menu-top:focus {
+	background-color: var(--greenberry-admin-accent);
+	color: var(--greenberry-admin-on-accent);
+}
+
+#adminmenu a:hover div.wp-menu-image::before,
+#adminmenu li.menu-top:hover div.wp-menu-image::before,
+#adminmenu li.opensub > a.menu-top div.wp-menu-image::before,
+#adminmenu li > a.menu-top:focus div.wp-menu-image::before,
+#adminmenu li.current div.wp-menu-image::before,
+#adminmenu li.wp-has-current-submenu div.wp-menu-image::before {
+	color: var(--greenberry-admin-on-accent);
+}
+
+#adminmenu li.current a.menu-top,
+#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu,
+.folded #adminmenu li.current.menu-top {
+	background: var(--greenberry-admin-accent);
+	color: var(--greenberry-admin-on-accent);
+}
+
+#adminmenu .wp-submenu,
+#adminmenu .wp-has-current-submenu .wp-submenu,
+#adminmenu .wp-has-current-submenu.opensub .wp-submenu,
+.folded #adminmenu .wp-has-current-submenu .wp-submenu {
+	background: var(--greenberry-admin-submenu-background);
+}
+
+#adminmenu .wp-submenu a {
+	color: var(--greenberry-admin-menu-text);
+}
+
+#adminmenu .wp-submenu a:hover,
+#adminmenu .wp-submenu a:focus {
+	color: var(--greenberry-admin-accent-soft);
+}
+
+#adminmenu .wp-submenu li.current a {
+	color: var(--greenberry-admin-menu-text);
+}
+
+#wpadminbar {
+	background: var(--greenberry-admin-menu-background);
+	color: var(--greenberry-admin-menu-text);
+}
+
+#wpadminbar .ab-item,
+#wpadminbar a.ab-item {
+	color: var(--greenberry-admin-menu-text);
+}
+
+#wpadminbar:not(.mobile) .ab-top-menu > li:hover > .ab-item,
+#wpadminbar:not(.mobile) .ab-top-menu > li > .ab-item:focus {
+	background: var(--greenberry-admin-submenu-background);
+	color: var(--greenberry-admin-accent-soft);
+}
+
+#wpadminbar .menupop .ab-sub-wrapper,
+#wpadminbar .shortlink-input {
+	background: var(--greenberry-admin-submenu-background);
+}
+
+#wpadminbar .ab-submenu .ab-item,
+#wpadminbar .quicklinks .menupop ul li a,
+#wpadminbar .quicklinks .menupop.hover ul li a {
+	color: var(--greenberry-admin-menu-text);
+}
+
+#wpadminbar .ab-submenu .ab-item:hover,
+#wpadminbar .quicklinks .menupop ul li a:hover {
+	color: var(--greenberry-admin-accent-soft);
+}
+
+#adminmenu .awaiting-mod,
+#adminmenu .update-plugins,
+.wp-core-ui .wp-ui-notification {
+	background: var(--greenberry-admin-notification);
+	color: var(--greenberry-admin-on-notification);
+}
+
+.wp-core-ui .wp-ui-highlight {
+	background-color: var(--greenberry-admin-accent);
+	color: var(--greenberry-admin-on-accent);
+}
+
+.wp-core-ui .wp-ui-text-highlight {
+	color: var(--greenberry-admin-accent);
+}
+
+.about-wrap .nav-tab-active,
+.nav-tab-active,
+.nav-tab-active:hover {
+	background-color: var(--greenberry-admin-background);
+	border-bottom-color: var(--greenberry-admin-background);
+}
+
+.media-item .bar,
+.media-progress-bar div {
+	background-color: var(--greenberry-admin-accent);
+}
+
+.details.attachment {
+	box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 7px var(--greenberry-admin-accent);
+}
+
+.theme-browser .theme.active .theme-name {
+	background: var(--greenberry-admin-accent);
+	color: var(--greenberry-admin-on-accent);
+}

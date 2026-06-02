@@ -1,0 +1,64 @@
+.greenberry-social-editor .components-base-control {
+	margin-bottom: 14px;
+}
+
+.greenberry-social-editor__channels {
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	margin: 0 0 12px;
+	padding: 10px 12px 0;
+}
+
+.greenberry-social-preview {
+	background: var(--wp--preset--color--base, #ffffff);
+	border: 1px solid color-mix(in srgb, var(--wp--preset--color--contrast, #1d2327) 14%, transparent);
+	border-radius: 8px;
+	color: var(--wp--preset--color--contrast, #1d2327);
+	margin-top: 16px;
+	padding: 14px;
+}
+
+.greenberry-social-preview__brand {
+	align-items: center;
+	display: flex;
+	gap: 10px;
+	margin-bottom: 12px;
+	min-width: 0;
+}
+
+.greenberry-social-preview__brand img,
+.greenberry-social-preview__brand span {
+	align-items: center;
+	background: var(--wp--preset--color--accent, #2271b1);
+	border-radius: 6px;
+	color: var(--wp--preset--color--base, #ffffff);
+	display: flex;
+	flex: 0 0 38px;
+	font-size: 13px;
+	font-weight: 700;
+	height: 38px;
+	justify-content: center;
+	object-fit: cover;
+	width: 38px;
+}
+
+.greenberry-social-preview__brand strong,
+.greenberry-social-preview__brand em {
+	display: block;
+	overflow-wrap: anywhere;
+}
+
+.greenberry-social-preview__brand em {
+	color: var(--wp--preset--color--contrast-2, #646970);
+	font-size: 12px;
+	font-style: normal;
+	margin-top: 2px;
+}
+
+.greenberry-social-preview p {
+	font-size: 13px;
+	line-height: 1.45;
+	margin: 0;
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}

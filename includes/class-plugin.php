@@ -35,6 +35,28 @@ class Plugin {
 		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-blocks.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-admin.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Newsletter/class-newsletter-module.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-repository.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-mailer.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-rest.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-blocks.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-admin.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Forms/class-forms-module.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Social/class-social-settings.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Social/class-social-publisher.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Social/class-social-editor.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Social/class-social-admin.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Social/class-social-module.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'AdminColours/class-admin-colours-settings.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'AdminColours/class-admin-colours-admin.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'AdminColours/class-admin-colours-module.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'AdminLogin/class-admin-login-settings.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'AdminLogin/class-admin-login-login.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'AdminLogin/class-admin-login-admin.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'AdminLogin/class-admin-login-module.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'CategoryFeaturedImage/class-category-featured-image-settings.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'CategoryFeaturedImage/class-category-featured-image-assigner.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'CategoryFeaturedImage/class-category-featured-image-admin.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'CategoryFeaturedImage/class-category-featured-image-module.php';
 	}
 
 	/**
@@ -65,6 +87,11 @@ class Plugin {
 		$modules->ensure_defaults();
 
 		\Greenberry\Newsletter\Module::activate();
+		\Greenberry\Forms\Module::activate();
+		\Greenberry\Social\Module::activate();
+		\Greenberry\AdminColours\Module::activate();
+		\Greenberry\AdminLogin\Module::activate();
+		\Greenberry\CategoryFeaturedImage\Module::activate();
 	}
 
 	/**
@@ -76,5 +103,10 @@ class Plugin {
 		self::require_files();
 
 		\Greenberry\Newsletter\Module::deactivate();
+		\Greenberry\Forms\Module::deactivate();
+		\Greenberry\Social\Module::deactivate();
+		\Greenberry\AdminColours\Module::deactivate();
+		\Greenberry\AdminLogin\Module::deactivate();
+		\Greenberry\CategoryFeaturedImage\Module::deactivate();
 	}
 }

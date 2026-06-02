@@ -29,6 +29,7 @@
 }
 
 .greenberry-admin .greenberry-field input[type="email"],
+.greenberry-admin .greenberry-field input[type="password"],
 .greenberry-admin .greenberry-field input[type="text"],
 .greenberry-admin .greenberry-field select,
 .greenberry-admin .greenberry-field textarea {
@@ -55,4 +56,669 @@
 	line-height: 1;
 	margin: 0 3px 3px 0;
 	padding: 5px 8px;
+}
+
+.greenberry-admin .greenberry-grid--forms {
+	align-items: start;
+}
+
+@media (min-width: 960px) {
+	.greenberry-admin .greenberry-grid--forms {
+		grid-template-columns: 340px minmax(0, 1fr);
+	}
+}
+
+.greenberry-admin .greenberry-section {
+	border-top: 1px solid #dcdcde;
+	margin-top: 18px;
+	padding-top: 14px;
+}
+
+.greenberry-admin .greenberry-section:first-of-type {
+	border-top: 0;
+	margin-top: 0;
+	padding-top: 0;
+}
+
+.greenberry-admin .greenberry-checkbox-field {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+}
+
+.greenberry-admin .greenberry-checkbox-field input {
+	margin: 0;
+}
+
+.greenberry-admin .greenberry-form-fields {
+	table-layout: fixed;
+}
+
+.greenberry-admin .greenberry-form-fields th:nth-child(1),
+.greenberry-admin .greenberry-form-fields th:nth-child(2) {
+	width: 15%;
+}
+
+.greenberry-admin .greenberry-form-fields th:nth-child(3),
+.greenberry-admin .greenberry-form-fields th:nth-child(4),
+.greenberry-admin .greenberry-form-fields th:nth-child(7) {
+	width: 10%;
+}
+
+.greenberry-admin .greenberry-form-fields th:nth-child(6) {
+	width: 16%;
+}
+
+.greenberry-admin .greenberry-form-fields input[type="number"],
+.greenberry-admin .greenberry-form-fields input[type="text"],
+.greenberry-admin .greenberry-form-fields select {
+	margin-bottom: 6px;
+	max-width: 100%;
+	width: 100%;
+}
+
+.greenberry-admin .greenberry-form-fields input[type="number"] {
+	width: 72px;
+}
+
+.greenberry-admin .greenberry-danger-zone {
+	border-top: 1px solid #dcdcde;
+	margin-top: 16px;
+	padding-top: 16px;
+}
+
+.greenberry-social-hero {
+	align-items: center;
+	background: var(--wp--preset--color--base, #ffffff);
+	border: 1px solid color-mix(in srgb, var(--wp--preset--color--contrast, #1d2327) 12%, transparent);
+	border-left: 4px solid var(--wp--preset--color--accent, #2271b1);
+	border-radius: 8px;
+	display: flex;
+	gap: 18px;
+	margin: 16px 0;
+	padding: 18px;
+}
+
+.greenberry-social-hero h2 {
+	font-size: 24px;
+	line-height: 1.2;
+	margin: 0 0 6px;
+}
+
+.greenberry-social-hero p {
+	color: var(--wp--preset--color--contrast-2, #646970);
+	margin: 0;
+	max-width: 760px;
+}
+
+.greenberry-social-brand {
+	align-items: center;
+	background: var(--wp--preset--color--accent, #2271b1);
+	border-radius: 8px;
+	color: var(--wp--preset--color--base, #ffffff);
+	display: flex;
+	flex: 0 0 64px;
+	font-size: 18px;
+	font-weight: 700;
+	height: 64px;
+	justify-content: center;
+	overflow: hidden;
+	width: 64px;
+}
+
+.greenberry-social-brand img {
+	display: block;
+	height: 100%;
+	object-fit: cover;
+	width: 100%;
+}
+
+.greenberry-module-hero {
+	align-items: center;
+	background: var(--wp--preset--color--base, #ffffff);
+	border: 1px solid color-mix(in srgb, var(--wp--preset--color--contrast, #1d2327) 12%, transparent);
+	border-left: 4px solid var(--wp--preset--color--accent, #2271b1);
+	border-radius: 8px;
+	display: flex;
+	gap: 18px;
+	margin: 16px 0;
+	padding: 18px;
+}
+
+.greenberry-module-hero h2 {
+	font-size: 24px;
+	line-height: 1.2;
+	margin: 0 0 6px;
+}
+
+.greenberry-module-hero p {
+	color: var(--wp--preset--color--contrast-2, #646970);
+	margin: 0;
+	max-width: 760px;
+}
+
+.greenberry-module-brand {
+	align-items: center;
+	background: var(--wp--preset--color--accent, #2271b1);
+	border-radius: 8px;
+	color: var(--wp--preset--color--base, #ffffff);
+	display: flex;
+	flex: 0 0 64px;
+	font-size: 18px;
+	font-weight: 700;
+	height: 64px;
+	justify-content: center;
+	overflow: hidden;
+	width: 64px;
+}
+
+.greenberry-module-brand img {
+	display: block;
+	height: 100%;
+	object-fit: cover;
+	width: 100%;
+}
+
+.greenberry-eyebrow {
+	color: var(--wp--preset--color--accent, #2271b1) !important;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0;
+	margin: 0 0 4px !important;
+	text-transform: uppercase;
+}
+
+.greenberry-social-layout {
+	display: grid;
+	gap: 16px;
+}
+
+.greenberry-social-section {
+	margin-top: 0;
+}
+
+.greenberry-section-heading {
+	align-items: center;
+	display: flex;
+	gap: 12px;
+	justify-content: space-between;
+	margin-bottom: 14px;
+}
+
+.greenberry-section-heading h2,
+.greenberry-social-provider h3 {
+	margin: 0;
+}
+
+.greenberry-switch-row {
+	align-items: flex-start;
+	display: flex;
+	gap: 10px;
+	margin: 0 0 14px;
+}
+
+.greenberry-switch-row input {
+	margin-top: 2px;
+}
+
+.greenberry-switch-row small {
+	color: #646970;
+	display: block;
+	margin-top: 2px;
+}
+
+.greenberry-social-provider-grid {
+	display: grid;
+	gap: 14px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 960px) {
+	.greenberry-social-provider-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+.greenberry-social-provider {
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	padding: 14px;
+}
+
+.greenberry-social-provider__header {
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 12px;
+}
+
+.greenberry-status {
+	background: #f0f0f1;
+	border-radius: 999px;
+	color: #50575e;
+	display: inline-block;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1;
+	padding: 5px 8px;
+}
+
+.greenberry-status.is-ready {
+	background: color-mix(in srgb, var(--wp--preset--color--accent-3, #00a32a) 16%, #ffffff);
+	color: #006b2d;
+}
+
+.greenberry-status.is-error {
+	background: #fcf0f1;
+	color: #8a2424;
+}
+
+.greenberry-inline-check {
+	align-items: center;
+	color: #646970;
+	display: flex !important;
+	font-weight: 400 !important;
+	gap: 6px;
+	margin-top: 6px !important;
+}
+
+.greenberry-checkbox-grid {
+	display: grid;
+	gap: 8px 14px;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.greenberry-checkbox-grid--compact {
+	grid-template-columns: repeat(auto-fit, minmax(130px, max-content));
+}
+
+.greenberry-checkbox-grid--scroll {
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	max-height: 190px;
+	overflow: auto;
+	padding: 10px;
+}
+
+.greenberry-checkbox-grid label {
+	align-items: center;
+	display: flex !important;
+	font-weight: 400 !important;
+	gap: 7px;
+	margin: 0 !important;
+}
+
+.greenberry-social-rules {
+	display: grid;
+	gap: 8px 18px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1100px) {
+	.greenberry-social-rules {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 600px) {
+	.greenberry-social-hero {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.greenberry-module-hero {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+}
+
+.greenberry-admin .greenberry-grid--admin-colours {
+	align-items: start;
+}
+
+@media (min-width: 960px) {
+	.greenberry-admin .greenberry-grid--admin-colours {
+		grid-template-columns: 320px minmax(0, 1fr);
+	}
+}
+
+.greenberry-admin .greenberry-radio-field {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.greenberry-admin .greenberry-radio-field input {
+	margin: 0;
+}
+
+.greenberry-admin .greenberry-colour-fields {
+	display: grid;
+	gap: 14px 18px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 782px) {
+	.greenberry-admin .greenberry-colour-fields {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+.greenberry-admin .greenberry-colour-fields .wp-picker-container,
+.greenberry-admin .greenberry-colour-fields .wp-picker-input-wrap {
+	max-width: 100%;
+}
+
+.greenberry-admin .greenberry-admin-colour-preview {
+	background: var(--preview-bg);
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	min-height: 170px;
+	overflow: hidden;
+}
+
+.greenberry-admin .greenberry-admin-colour-preview__bar {
+	background: var(--preview-menu);
+	height: 42px;
+	position: relative;
+}
+
+.greenberry-admin .greenberry-admin-colour-preview__bar::before {
+	background: var(--preview-accent);
+	border-radius: 3px;
+	content: "";
+	display: block;
+	height: 18px;
+	left: 14px;
+	position: absolute;
+	top: 12px;
+	width: 86px;
+}
+
+.greenberry-admin .greenberry-admin-colour-preview__body {
+	display: grid;
+	gap: 10px;
+	padding: 16px;
+}
+
+.greenberry-admin .greenberry-admin-colour-preview__body span {
+	background: #fff;
+	border-left: 5px solid var(--preview-accent);
+	border-radius: 4px;
+	display: block;
+	height: 22px;
+}
+
+.greenberry-admin .greenberry-colour-swatch {
+	border: 1px solid #dcdcde;
+	border-radius: 50%;
+	display: inline-block;
+	height: 16px;
+	margin-right: 6px;
+	vertical-align: -3px;
+	width: 16px;
+}
+
+.greenberry-admin .greenberry-admin-colours-presets code {
+	white-space: nowrap;
+}
+
+.greenberry-admin .greenberry-grid--featured-image {
+	align-items: start;
+}
+
+@media (min-width: 960px) {
+	.greenberry-admin .greenberry-grid--featured-image {
+		grid-template-columns: 320px minmax(0, 1fr);
+	}
+}
+
+.greenberry-admin .greenberry-featured-image-table {
+	table-layout: fixed;
+}
+
+.greenberry-admin .greenberry-featured-image-table th:first-child {
+	width: 34%;
+}
+
+.greenberry-admin .greenberry-image-picker {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.greenberry-admin .greenberry-image-picker__preview {
+	align-items: center;
+	background: var(--wp--preset--color--base-2, #f6f7f7);
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	color: #646970;
+	display: flex;
+	font-size: 12px;
+	height: 64px;
+	justify-content: center;
+	overflow: hidden;
+	text-align: center;
+	width: 96px;
+}
+
+.greenberry-admin .greenberry-image-picker__preview img {
+	display: none;
+	height: 100%;
+	object-fit: cover;
+	width: 100%;
+}
+
+.greenberry-admin .greenberry-image-picker.has-image .greenberry-image-picker__preview img {
+	display: block;
+}
+
+.greenberry-admin .greenberry-image-picker.has-image .greenberry-image-picker__preview span {
+	display: none;
+}
+
+.greenberry-admin .greenberry-image-picker__actions {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.greenberry-admin .greenberry-image-picker:not(.has-image) [data-greenberry-image-remove] {
+	display: none;
+}
+
+.greenberry-admin .greenberry-term-defaults {
+	display: grid;
+	gap: 10px;
+}
+
+.greenberry-admin .greenberry-term-defaults__group {
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.greenberry-admin .greenberry-term-defaults__group summary {
+	align-items: center;
+	background: var(--wp--preset--color--base-2, #f6f7f7);
+	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
+	padding: 12px 14px;
+}
+
+.greenberry-admin .greenberry-term-defaults__group summary code {
+	margin-left: 8px;
+}
+
+.greenberry-admin .greenberry-term-defaults__group table,
+.greenberry-admin .greenberry-term-defaults__group > p {
+	margin: 12px;
+	width: calc(100% - 24px);
+}
+
+.greenberry-admin-login-layout {
+	align-items: start;
+	display: grid;
+	gap: 16px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1080px) {
+	.greenberry-admin-login-layout {
+		grid-template-columns: minmax(320px, 460px) minmax(0, 1fr);
+	}
+}
+
+.greenberry-admin .greenberry-media-field {
+	margin-top: 18px;
+}
+
+.greenberry-media-field__preview {
+	align-items: center;
+	aspect-ratio: 16 / 9;
+	background: #f6f7f7;
+	border: 1px dashed #c3c4c7;
+	border-radius: 6px;
+	color: #646970;
+	display: flex;
+	justify-content: center;
+	margin-bottom: 10px;
+	max-width: 360px;
+	overflow: hidden;
+}
+
+.greenberry-media-field__preview img {
+	height: 100%;
+	object-fit: cover;
+	width: 100%;
+}
+
+.greenberry-media-field__preview.is-empty {
+	padding: 18px;
+}
+
+.greenberry-admin-login-preview {
+	--greenberry-preview-base: var(--wp--preset--color--base, #ffffff);
+	--greenberry-preview-base-2: var(--wp--preset--color--base-2, #f6f7f7);
+	--greenberry-preview-contrast: var(--wp--preset--color--contrast, #1d2327);
+	--greenberry-preview-contrast-2: var(--wp--preset--color--contrast-2, #50575e);
+	--greenberry-preview-contrast-3: var(--wp--preset--color--contrast-3, #646970);
+	--greenberry-preview-accent: var(--wp--preset--color--accent, #2271b1);
+	background: var(--greenberry-preview-base-2);
+	background-position: center;
+	background-size: cover;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	display: flex;
+	justify-content: center;
+	min-height: 540px;
+	overflow: hidden;
+	padding: 24px;
+	position: relative;
+}
+
+.greenberry-admin-login-preview::before {
+	background: rgba(246, 247, 247, 0.42);
+	background: color-mix(in srgb, var(--greenberry-preview-base-2) 42%, transparent);
+	content: "";
+	inset: 0;
+	position: absolute;
+}
+
+.greenberry-admin-login-preview__card {
+	background: rgba(255, 255, 255, 0.94);
+	border: 1px solid rgba(29, 35, 39, 0.12);
+	border-radius: 8px;
+	box-shadow: 0 18px 52px rgba(29, 35, 39, 0.22);
+	color: var(--greenberry-preview-contrast);
+	margin: auto;
+	max-width: 420px;
+	padding: 30px 36px;
+	position: relative;
+	width: 100%;
+}
+
+.greenberry-admin-login-preview__logo {
+	align-items: center;
+	background: var(--greenberry-preview-accent);
+	border-radius: 50%;
+	box-shadow: 0 8px 26px rgba(29, 35, 39, 0.18);
+	color: var(--greenberry-preview-base);
+	display: flex;
+	font-size: 22px;
+	font-weight: 700;
+	height: 78px;
+	justify-content: center;
+	margin: 0 auto 24px;
+	overflow: hidden;
+	width: 78px;
+}
+
+.greenberry-admin-login-preview__logo img {
+	height: 100%;
+	object-fit: cover;
+	width: 100%;
+}
+
+.greenberry-admin-login-preview__message {
+	background: var(--greenberry-preview-base-2);
+	border-left: 4px solid var(--greenberry-preview-accent);
+	box-shadow: inset 0 -1px 0 rgba(29, 35, 39, 0.08);
+	color: var(--greenberry-preview-contrast-2);
+	font-size: 14px;
+	line-height: 1.5;
+	margin-bottom: 22px;
+	overflow-wrap: anywhere;
+	padding: 14px 16px;
+	white-space: pre-line;
+}
+
+.greenberry-admin-login-preview__field {
+	margin-bottom: 18px;
+}
+
+.greenberry-admin-login-preview__field span {
+	color: var(--greenberry-preview-contrast-2);
+	display: block;
+	font-weight: 600;
+	margin-bottom: 8px;
+}
+
+.greenberry-admin-login-preview__field i {
+	background: var(--greenberry-preview-base);
+	border: 1px solid rgba(29, 35, 39, 0.26);
+	border-radius: 6px;
+	display: block;
+	height: 46px;
+}
+
+.greenberry-admin-login-preview__button {
+	background: var(--greenberry-preview-accent);
+	border-radius: 6px;
+	color: var(--greenberry-preview-base);
+	font-weight: 700;
+	margin-top: 6px;
+	padding: 14px;
+	text-align: center;
+}
+
+.greenberry-admin-login-preview__links {
+	color: var(--greenberry-preview-contrast-3);
+	margin-top: 24px;
+	text-align: center;
+}
+
+@media (max-width: 782px) {
+	.greenberry-admin-login-preview {
+		min-height: 460px;
+		padding: 16px;
+	}
+
+	.greenberry-admin-login-preview__card {
+		padding: 24px;
+	}
 }

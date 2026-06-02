@@ -1,0 +1,170 @@
+.greenberry-form {
+	background: var(--wp--preset--color--base, #ffffff);
+	border: 1px solid color-mix(in srgb, var(--wp--preset--color--contrast, #1d2327) 14%, transparent);
+	border-radius: 8px;
+	box-sizing: border-box;
+	color: var(--wp--preset--color--contrast, inherit);
+	padding: clamp(20px, 4vw, 32px);
+}
+
+.greenberry-form__heading {
+	font-size: clamp(1.35rem, 2vw, 1.8rem);
+	line-height: 1.2;
+	margin: 0 0 8px;
+}
+
+.greenberry-form__description {
+	color: var(--wp--preset--color--contrast-2, currentColor);
+	margin: 0 0 18px;
+	max-width: 62ch;
+	opacity: 0.82;
+}
+
+.greenberry-form__form {
+	display: grid;
+	gap: 18px;
+}
+
+.greenberry-form__fields {
+	display: grid;
+	gap: 14px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 760px) {
+	.greenberry-form__fields {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.greenberry-form__field--textarea,
+	.greenberry-form__field--address,
+	.greenberry-form__field--checkbox,
+	.greenberry-form__field--file {
+		grid-column: 1 / -1;
+	}
+}
+
+.greenberry-form__field {
+	display: grid;
+	font-size: 0.94rem;
+	font-weight: 600;
+	gap: 7px;
+	min-width: 0;
+}
+
+.greenberry-form__label-text {
+	align-items: center;
+	display: inline-flex;
+	gap: 4px;
+	line-height: 1.35;
+}
+
+.greenberry-form__required {
+	color: var(--wp--preset--color--accent, #b32d2e);
+}
+
+.greenberry-form__field input[type="email"],
+.greenberry-form__field input[type="file"],
+.greenberry-form__field input[type="text"],
+.greenberry-form__field textarea {
+	background: var(--wp--preset--color--base, #ffffff);
+	border: 1px solid color-mix(in srgb, var(--wp--preset--color--contrast, #1d2327) 26%, transparent);
+	border-radius: 4px;
+	box-sizing: border-box;
+	color: var(--wp--preset--color--contrast, #1d2327);
+	font: inherit;
+	min-height: 44px;
+	padding: 10px 12px;
+	width: 100%;
+}
+
+.greenberry-form__field textarea {
+	min-height: 132px;
+	resize: vertical;
+}
+
+.greenberry-form__field input:focus,
+.greenberry-form__field textarea:focus {
+	border-color: var(--wp--preset--color--accent, #2271b1);
+	box-shadow: 0 0 0 1px var(--wp--preset--color--accent, #2271b1);
+	outline: none;
+}
+
+.greenberry-form__checkbox-row {
+	align-items: flex-start;
+	display: flex;
+	font-weight: 500;
+	gap: 9px;
+	line-height: 1.45;
+}
+
+.greenberry-form__checkbox-row input {
+	flex: 0 0 auto;
+	margin-top: 0.2em;
+}
+
+.greenberry-form__help {
+	color: var(--wp--preset--color--contrast-3, currentColor);
+	font-size: 0.84rem;
+	font-weight: 400;
+	line-height: 1.4;
+	opacity: 0.76;
+}
+
+.greenberry-form__honeypot {
+	left: -9999px;
+	position: absolute;
+}
+
+.greenberry-form__turnstile {
+	min-height: 0;
+}
+
+.greenberry-form__warning {
+	background: var(--wp--preset--color--base-2, #f6f7f7);
+	border-left: 4px solid var(--wp--preset--color--accent-3, #d63638);
+	margin: 0;
+	padding: 10px 12px;
+}
+
+.greenberry-form__submit-row {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.greenberry-form__button {
+	background: var(--wp--preset--color--accent, #2271b1);
+	border: 0;
+	border-radius: 4px;
+	color: var(--wp--preset--color--base, #ffffff);
+	cursor: pointer;
+	font: inherit;
+	font-weight: 700;
+	min-height: 44px;
+	padding: 10px 18px;
+}
+
+.greenberry-form__button:hover {
+	background: var(--wp--preset--color--contrast, #1d2327);
+}
+
+.greenberry-form__button:disabled {
+	cursor: wait;
+	opacity: 0.65;
+}
+
+.greenberry-form__status {
+	font-size: 0.92rem;
+	min-height: 1.35em;
+	opacity: 0.86;
+}
+
+.greenberry-form__status--success {
+	color: var(--wp--preset--color--accent-4, #008a20);
+}
+
+.greenberry-form__status--error {
+	color: var(--wp--preset--color--accent-3, #b32d2e);
+}
