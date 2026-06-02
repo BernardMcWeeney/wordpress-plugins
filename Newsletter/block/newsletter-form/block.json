@@ -1,0 +1,48 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "greenberry/newsletter-form",
+	"title": "Newsletter Form",
+	"category": "widgets",
+	"icon": "email",
+	"description": "Collect consented email subscribers for Greenberry Newsletter.",
+	"textdomain": "greenberry",
+	"attributes": {
+		"heading": {
+			"type": "string",
+			"default": "Stay in the loop"
+		},
+		"description": {
+			"type": "string",
+			"default": "Get the latest updates by email."
+		},
+		"buttonLabel": {
+			"type": "string",
+			"default": "Subscribe"
+		},
+		"showName": {
+			"type": "boolean",
+			"default": false
+		},
+		"tags": {
+			"type": "string",
+			"default": "newsletter"
+		},
+		"consentText": {
+			"type": "string",
+			"default": "I agree to receive email updates and understand I can unsubscribe at any time."
+		},
+		"successMessage": {
+			"type": "string",
+			"default": "Thanks. Please check your inbox for future updates."
+		}
+	},
+	"supports": {
+		"align": ["wide", "full"],
+		"html": false,
+		"spacing": {
+			"margin": true,
+			"padding": true
+		}
+	}
+}

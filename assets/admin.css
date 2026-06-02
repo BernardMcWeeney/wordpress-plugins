@@ -1,0 +1,58 @@
+.greenberry-admin .greenberry-panel {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	margin-top: 16px;
+	padding: 16px;
+}
+
+.greenberry-admin .greenberry-grid {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 960px) {
+	.greenberry-admin .greenberry-grid {
+		grid-template-columns: 360px minmax(0, 1fr);
+	}
+}
+
+.greenberry-admin .greenberry-field {
+	margin-bottom: 12px;
+}
+
+.greenberry-admin .greenberry-field label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.greenberry-admin .greenberry-field input[type="email"],
+.greenberry-admin .greenberry-field input[type="text"],
+.greenberry-admin .greenberry-field select,
+.greenberry-admin .greenberry-field textarea {
+	max-width: 100%;
+	width: 100%;
+}
+
+.greenberry-admin .greenberry-muted {
+	color: #646970;
+}
+
+.greenberry-admin .greenberry-actions {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.greenberry-admin .greenberry-badge {
+	background: #f0f0f1;
+	border-radius: 999px;
+	display: inline-block;
+	font-size: 12px;
+	line-height: 1;
+	margin: 0 3px 3px 0;
+	padding: 5px 8px;
+}
