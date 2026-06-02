@@ -437,7 +437,7 @@ class Publisher {
 	 */
 	private function test_bluesky( $config ) {
 		if ( empty( $config['identifier'] ) || empty( $config['token'] ) || empty( $config['pds_host'] ) ) {
-			return new \WP_Error( 'bluesky_incomplete', __( 'Add a handle, app password, and PDS host, then save before testing.', 'greenberry' ) );
+			return new \WP_Error( 'bluesky_incomplete', __( 'Add a handle, app password, and PDS host before testing.', 'greenberry' ) );
 		}
 
 		$session = wp_remote_post(
@@ -475,7 +475,7 @@ class Publisher {
 	 */
 	private function test_linkedin( $config ) {
 		if ( empty( $config['token'] ) || empty( $config['author_urn'] ) ) {
-			return new \WP_Error( 'linkedin_incomplete', __( 'Add an access token and author URN, then save before testing.', 'greenberry' ) );
+			return new \WP_Error( 'linkedin_incomplete', __( 'Add an access token and author URN before testing.', 'greenberry' ) );
 		}
 
 		$response = wp_remote_get(

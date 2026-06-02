@@ -208,6 +208,32 @@ class Repository {
 	}
 
 	/**
+	 * Gets top posts across all recorded stats.
+	 *
+	 * @param int $limit Number of rows.
+	 * @return array<int,object>
+	 */
+	public function get_top_posts_all_time( $limit = 10 ) {
+		global $wpdb;
+
+		$limit = max( 1, min( 50, absint( $limit ) ) );
+		$table = $this->table();
+
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT d.post_id, SUM(d.views) AS views, p.post_title, p.post_type
+				FROM {$table} d
+				INNER JOIN {$wpdb->posts} p ON p.ID = d.post_id
+				WHERE p.post_status = 'publish'
+				GROUP BY d.post_id, p.post_title, p.post_type
+				ORDER BY views DESC
+				LIMIT %d",
+				$limit
+			)
+		);
+	}
+
+	/**
 	 * Returns public post types that should receive stats columns and tracking.
 	 *
 	 * @return array<string,\WP_Post_Type>

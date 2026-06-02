@@ -177,34 +177,20 @@ class Admin {
 		$today       = current_datetime();
 		$today_date  = $today->format( 'Y-m-d' );
 		$week_start  = $today->modify( '-6 days' )->format( 'Y-m-d' );
-		$site_name   = get_bloginfo( 'name' );
 		$today_views = $this->repository->get_period_views( $today_date, $today_date );
 		$week_views  = $this->repository->get_period_views( $week_start, $today_date );
 
 		\Greenberry\Admin_UI::open(
 			__( 'Stats', 'greenberry' ),
-			sprintf(
-				/* translators: %s: site name. */
-				__( 'Simple aggregate view counts for %s.', 'greenberry' ),
-				$site_name
-			),
+			__( 'Simple aggregate view counts for posts and pages.', 'greenberry' ),
 			'greenberry-stats-admin'
 		);
 		?>
-		<section class="greenberry-panel greenberry-stats-brand">
-			<div class="greenberry-stats-brand__site">
-				<?php $this->render_site_logo(); ?>
-				<div>
-					<h2><?php echo esc_html( $site_name ); ?></h2>
-					<a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( home_url( '/' ) ); ?></a>
-				</div>
-			</div>
-			<div class="greenberry-stats-kpis" aria-label="<?php esc_attr_e( 'Stats summary', 'greenberry' ); ?>">
-				<?php $this->render_kpi( __( 'Today', 'greenberry' ), $today_views ); ?>
-				<?php $this->render_kpi( __( 'Last 7 days', 'greenberry' ), $week_views ); ?>
-				<?php $this->render_kpi( __( 'All time', 'greenberry' ), $this->repository->get_all_time_views() ); ?>
-			</div>
-		</section>
+		<div class="greenberry-stats-kpis" aria-label="<?php esc_attr_e( 'Stats summary', 'greenberry' ); ?>">
+			<?php $this->render_kpi( __( 'Today', 'greenberry' ), $today_views, __( 'Views recorded since midnight.', 'greenberry' ) ); ?>
+			<?php $this->render_kpi( __( 'Last 7 days', 'greenberry' ), $week_views, __( 'Rolling weekly total.', 'greenberry' ) ); ?>
+			<?php $this->render_kpi( __( 'All time', 'greenberry' ), $this->repository->get_all_time_views(), __( 'Total recorded views.', 'greenberry' ) ); ?>
+		</div>
 
 		<div class="greenberry-grid greenberry-grid--stats">
 			<section class="greenberry-panel">
@@ -223,6 +209,11 @@ class Admin {
 					<h2><?php esc_html_e( 'Top 10 Last 7 Days', 'greenberry' ); ?></h2>
 					<?php $this->render_top_posts_table( $this->repository->get_top_posts( $week_start, $today_date, 10 ) ); ?>
 				</section>
+
+				<section class="greenberry-panel">
+					<h2><?php esc_html_e( 'Top 10 All Time', 'greenberry' ); ?></h2>
+					<?php $this->render_top_posts_table( $this->repository->get_top_posts_all_time( 10 ) ); ?>
+				</section>
 			</div>
 		</div>
 
@@ -238,13 +229,17 @@ class Admin {
 	 *
 	 * @param string $label Label.
 	 * @param int    $value Value.
+	 * @param string $help  Helper text.
 	 * @return void
 	 */
-	private function render_kpi( $label, $value ) {
+	private function render_kpi( $label, $value, $help = '' ) {
 		?>
 		<div class="greenberry-stats-kpi">
 			<span><?php echo esc_html( $label ); ?></span>
 			<strong><?php echo esc_html( number_format_i18n( absint( $value ) ) ); ?></strong>
+			<?php if ( '' !== $help ) : ?>
+				<small><?php echo esc_html( $help ); ?></small>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -294,7 +289,10 @@ class Admin {
 	 */
 	private function render_top_posts_table( $rows ) {
 		if ( empty( $rows ) ) {
-			echo '<p class="greenberry-muted">' . esc_html__( 'No views recorded for this period yet.', 'greenberry' ) . '</p>';
+			echo '<div class="greenberry-stats-empty">';
+			echo '<strong>' . esc_html__( 'No views yet', 'greenberry' ) . '</strong>';
+			echo '<span>' . esc_html__( 'This list will fill automatically once published posts or pages receive visits.', 'greenberry' ) . '</span>';
+			echo '</div>';
 			return;
 		}
 		?>
@@ -334,65 +332,6 @@ class Admin {
 			</tbody>
 		</table>
 		<?php
-	}
-
-	/**
-	 * Renders site logo or initials fallback.
-	 *
-	 * @return void
-	 */
-	private function render_site_logo() {
-		$logo_url = $this->get_site_logo_url();
-
-		if ( $logo_url ) {
-			echo '<img class="greenberry-stats-brand__logo" src="' . esc_url( $logo_url ) . '" alt="">';
-			return;
-		}
-
-		echo '<span class="greenberry-stats-brand__fallback" aria-hidden="true">' . esc_html( $this->get_site_initials() ) . '</span>';
-	}
-
-	/**
-	 * Gets the site logo or icon URL.
-	 *
-	 * @return string
-	 */
-	private function get_site_logo_url() {
-		$custom_logo_id = absint( get_theme_mod( 'custom_logo' ) );
-		if ( $custom_logo_id ) {
-			$logo_url = wp_get_attachment_image_url( $custom_logo_id, 'thumbnail' );
-			if ( $logo_url ) {
-				return $logo_url;
-			}
-		}
-
-		$site_icon_url = get_site_icon_url( 96 );
-
-		return $site_icon_url ? $site_icon_url : '';
-	}
-
-	/**
-	 * Gets fallback initials from the site name.
-	 *
-	 * @return string
-	 */
-	private function get_site_initials() {
-		$words    = preg_split( '/\s+/', trim( get_bloginfo( 'name' ) ) );
-		$initials = '';
-
-		foreach ( $words as $word ) {
-			if ( '' === $word ) {
-				continue;
-			}
-
-			$initials .= strtoupper( substr( $word, 0, 1 ) );
-
-			if ( 2 <= strlen( $initials ) ) {
-				break;
-			}
-		}
-
-		return $initials ? $initials : 'GB';
 	}
 
 	/**

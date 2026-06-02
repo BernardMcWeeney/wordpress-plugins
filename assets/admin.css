@@ -140,7 +140,7 @@
 	}
 
 	.greenberry-admin .greenberry-grid--stats {
-		grid-template-columns: 320px minmax(0, 1fr);
+		grid-template-columns: 380px minmax(0, 1fr);
 	}
 }
 
@@ -727,6 +727,21 @@
 	margin: 0 0 4px;
 }
 
+.greenberry-social-provider__actions {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.greenberry-social-provider__actions .description {
+	flex-basis: 100%;
+}
+
+.greenberry-social-test-result {
+	font-weight: 600;
+}
+
 .greenberry-social-rules {
 	display: grid;
 	gap: 8px 18px;
@@ -742,66 +757,21 @@
 /* -----------------------------------------------------------------------------
  * Stats
  * -------------------------------------------------------------------------- */
-.greenberry-stats-brand {
-	align-items: center;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 18px;
-	justify-content: space-between;
-}
-
-.greenberry-stats-brand__site {
-	align-items: center;
-	display: flex;
-	gap: 14px;
-	min-width: 0;
-}
-
-.greenberry-stats-brand__site h2 {
-	font-size: 18px;
-	margin: 0 0 3px;
-}
-
-.greenberry-stats-brand__site a {
-	color: var(--gb-text-muted);
-	overflow-wrap: anywhere;
-	text-decoration: none;
-}
-
-.greenberry-stats-brand__logo,
-.greenberry-stats-brand__fallback {
-	border-radius: var(--gb-radius-sm);
-	flex: 0 0 56px;
-	height: 56px;
-	width: 56px;
-}
-
-.greenberry-stats-brand__logo {
-	object-fit: cover;
-}
-
-.greenberry-stats-brand__fallback {
-	align-items: center;
-	background: var(--gb-accent);
-	color: #fff;
-	display: flex;
-	font-size: 17px;
-	font-weight: 700;
-	justify-content: center;
-}
-
 .greenberry-stats-kpis {
 	display: grid;
-	gap: 10px;
-	grid-template-columns: repeat(3, minmax(92px, 1fr));
+	gap: 16px;
+	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+	margin: 0 0 16px;
 }
 
 .greenberry-stats-kpi {
-	background: var(--gb-surface-muted);
+	background: var(--gb-surface);
 	border: 1px solid var(--gb-border);
+	border-left: 4px solid var(--gb-accent);
 	border-radius: var(--gb-radius-sm);
-	min-width: 92px;
-	padding: 11px 12px;
+	box-shadow: var(--gb-shadow);
+	min-height: 104px;
+	padding: 16px 18px;
 }
 
 .greenberry-stats-kpi span {
@@ -815,13 +785,28 @@
 .greenberry-stats-kpi strong {
 	color: var(--gb-accent);
 	display: block;
-	font-size: 22px;
+	font-size: 32px;
 	line-height: 1;
+	margin-top: 8px;
+}
+
+.greenberry-stats-kpi small {
+	color: var(--gb-text-muted);
+	display: block;
+	margin-top: 9px;
+}
+
+.greenberry-stats-admin .greenberry-grid--stats {
+	gap: 22px;
 }
 
 .greenberry-stats-top {
 	display: grid;
 	gap: 16px;
+}
+
+.greenberry-stats-top .greenberry-panel {
+	margin-top: 0;
 }
 
 .greenberry-stats-days {
@@ -872,6 +857,21 @@
 .greenberry-stats-table__links {
 	font-size: 12px;
 	margin-top: 3px;
+}
+
+.greenberry-stats-empty {
+	background: var(--gb-surface-muted);
+	border: 1px dashed var(--gb-border-strong);
+	border-radius: var(--gb-radius-sm);
+	color: var(--gb-text-muted);
+	display: grid;
+	gap: 4px;
+	margin-top: 14px;
+	padding: 16px;
+}
+
+.greenberry-stats-empty strong {
+	color: var(--gb-text);
 }
 
 .greenberry-stats-privacy {

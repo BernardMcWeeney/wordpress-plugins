@@ -57,6 +57,67 @@ class Settings {
 	}
 
 	/**
+	 * Saves settings for one social provider.
+	 *
+	 * @param string $provider      Provider key.
+	 * @param array  $provider_data Raw provider form data.
+	 * @param bool   $clear_token   Whether to clear the saved token.
+	 * @return array|\WP_Error
+	 */
+	public function save_provider( $provider, $provider_data, $clear_token = false ) {
+		$provider = sanitize_key( $provider );
+		if ( ! array_key_exists( $provider, $this->providers() ) ) {
+			return new \WP_Error( 'unsupported_provider', __( 'Unsupported social provider.', 'greenberry' ) );
+		}
+
+		$existing = $this->get();
+		$data     = array(
+			'providers'   => $existing['providers'],
+			'clear_token' => array(),
+		);
+
+		$data['providers'][ $provider ] = is_array( $provider_data ) ? $provider_data : array();
+
+		if ( $clear_token ) {
+			$data['clear_token'][ $provider ] = true;
+		}
+
+		$providers = $this->sanitize_providers( $data, $existing );
+		$existing['providers'][ $provider ] = $providers[ $provider ];
+
+		update_option( self::OPTION_NAME, $existing, false );
+
+		return $existing['providers'][ $provider ];
+	}
+
+	/**
+	 * Stores the last connection-test outcome for a provider.
+	 *
+	 * @param string $provider Provider key.
+	 * @param bool   $success  Whether the test succeeded.
+	 * @param string $message  Failure message.
+	 * @return array|\WP_Error
+	 */
+	public function record_provider_test( $provider, $success, $message = '' ) {
+		$provider = sanitize_key( $provider );
+		if ( ! array_key_exists( $provider, $this->providers() ) ) {
+			return new \WP_Error( 'unsupported_provider', __( 'Unsupported social provider.', 'greenberry' ) );
+		}
+
+		$settings = $this->get();
+		if ( ! isset( $settings['providers'][ $provider ] ) || ! is_array( $settings['providers'][ $provider ] ) ) {
+			return new \WP_Error( 'unsupported_provider', __( 'Unsupported social provider.', 'greenberry' ) );
+		}
+
+		$settings['providers'][ $provider ]['verified_at'] = $success ? current_time( 'mysql' ) : '';
+		$settings['providers'][ $provider ]['last_error']  = $success ? '' : sanitize_text_field( $message );
+
+		update_option( self::OPTION_NAME, $settings, false );
+
+		return $settings['providers'][ $provider ];
+	}
+
+	/**
 	 * Returns provider definitions.
 	 *
 	 * @return array<string,array<string,string>>
@@ -153,7 +214,7 @@ class Settings {
 	 *
 	 * @param string     $provider Provider key.
 	 * @param array|null $settings Settings.
-	 * @return array{ready:bool,label:string}
+	 * @return array{ready:bool,label:string,state:string}
 	 */
 	public function get_provider_status( $provider, $settings = null ) {
 		if ( null === $settings ) {
@@ -168,6 +229,7 @@ class Settings {
 			return array(
 				'ready' => false,
 				'label' => __( 'Disabled', 'greenberry' ),
+				'state' => 'disabled',
 			);
 		}
 
@@ -179,9 +241,34 @@ class Settings {
 			$ready = false;
 		}
 
+		if ( ! $ready ) {
+			return array(
+				'ready' => false,
+				'label' => __( 'Missing details', 'greenberry' ),
+				'state' => 'missing',
+			);
+		}
+
+		if ( ! empty( $config['last_error'] ) ) {
+			return array(
+				'ready' => false,
+				'label' => __( 'Check failed', 'greenberry' ),
+				'state' => 'error',
+			);
+		}
+
+		if ( ! empty( $config['verified_at'] ) ) {
+			return array(
+				'ready' => true,
+				'label' => __( 'Verified', 'greenberry' ),
+				'state' => 'verified',
+			);
+		}
+
 		return array(
-			'ready' => $ready,
-			'label' => $ready ? __( 'Ready', 'greenberry' ) : __( 'Missing details', 'greenberry' ),
+			'ready' => true,
+			'label' => __( 'Configured', 'greenberry' ),
+			'state' => 'configured',
 		);
 	}
 
@@ -268,12 +355,16 @@ class Settings {
 					'identifier' => '',
 					'token'      => '',
 					'pds_host'   => 'https://bsky.social',
+					'verified_at' => '',
+					'last_error' => '',
 				),
 				'linkedin' => array(
 					'enabled'    => false,
 					'token'      => '',
 					'author_urn' => '',
 					'version'    => '202603',
+					'verified_at' => '',
+					'last_error' => '',
 				),
 			),
 			'rules'            => array(
@@ -364,7 +455,7 @@ class Settings {
 			$linkedin_version = $defaults['linkedin']['version'];
 		}
 
-		return array(
+		$providers = array(
 			'bluesky'  => array(
 				'enabled'    => ! empty( $bluesky['enabled'] ),
 				'identifier' => isset( $bluesky['identifier'] ) ? sanitize_text_field( $bluesky['identifier'] ) : '',
@@ -378,6 +469,42 @@ class Settings {
 				'version'    => $linkedin_version,
 			),
 		);
+
+		foreach ( $providers as $provider => $config ) {
+			$providers[ $provider ] = $this->preserve_connection_check( $provider, $config, $existing );
+		}
+
+		return $providers;
+	}
+
+	/**
+	 * Preserves the last connection check until the saved connection changes.
+	 *
+	 * @param string $provider Provider key.
+	 * @param array  $config   Sanitized provider config without check state.
+	 * @param array  $existing Existing settings.
+	 * @return array
+	 */
+	private function preserve_connection_check( $provider, $config, $existing ) {
+		$existing_config = isset( $existing['providers'][ $provider ] ) && is_array( $existing['providers'][ $provider ] )
+			? $existing['providers'][ $provider ]
+			: array();
+
+		$existing_base = array();
+		foreach ( array_keys( $config ) as $key ) {
+			$existing_base[ $key ] = isset( $existing_config[ $key ] ) ? $existing_config[ $key ] : '';
+		}
+
+		if ( $existing_base === $config ) {
+			$config['verified_at'] = isset( $existing_config['verified_at'] ) ? sanitize_text_field( $existing_config['verified_at'] ) : '';
+			$config['last_error']  = isset( $existing_config['last_error'] ) ? sanitize_text_field( $existing_config['last_error'] ) : '';
+			return $config;
+		}
+
+		$config['verified_at'] = '';
+		$config['last_error']  = '';
+
+		return $config;
 	}
 
 	/**
