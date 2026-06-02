@@ -3,6 +3,7 @@
 	var __ = wp.i18n.__;
 	var registerBlockType = wp.blocks.registerBlockType;
 	var InspectorControls = wp.blockEditor.InspectorControls;
+	var RichText = wp.blockEditor.RichText;
 	var useBlockProps = wp.blockEditor.useBlockProps;
 	var PanelBody = wp.components.PanelBody;
 	var TextControl = wp.components.TextControl;
@@ -71,12 +72,22 @@
 						} )
 					)
 				),
-				attributes.heading
-					? el( 'h2', { className: 'greenberry-newsletter-form__heading' }, attributes.heading )
-					: null,
-				attributes.description
-					? el( 'p', { className: 'greenberry-newsletter-form__description' }, attributes.description )
-					: null,
+				el( RichText, {
+					tagName: 'h2',
+					className: 'greenberry-newsletter-form__heading',
+					value: attributes.heading,
+					allowedFormats: [],
+					placeholder: __( 'Newsletter heading', 'greenberry' ),
+					onChange: setAttribute( 'heading' ),
+				} ),
+				el( RichText, {
+					tagName: 'p',
+					className: 'greenberry-newsletter-form__description',
+					value: attributes.description,
+					allowedFormats: [],
+					placeholder: __( 'Short description', 'greenberry' ),
+					onChange: setAttribute( 'description' ),
+				} ),
 				el(
 					'div',
 					{ className: 'greenberry-newsletter-form__form' },
@@ -102,7 +113,13 @@
 						'label',
 						{ className: 'greenberry-newsletter-form__consent' },
 						el( 'input', { type: 'checkbox', disabled: true } ),
-						el( 'span', null, attributes.consentText )
+						el( RichText, {
+							tagName: 'span',
+							value: attributes.consentText,
+							allowedFormats: [],
+							placeholder: __( 'Consent text', 'greenberry' ),
+							onChange: setAttribute( 'consentText' ),
+						} )
 					),
 					el(
 						'div',
@@ -110,7 +127,13 @@
 						el(
 							'button',
 							{ type: 'button', className: 'greenberry-newsletter-form__button' },
-							attributes.buttonLabel
+							el( RichText, {
+								tagName: 'span',
+								value: attributes.buttonLabel,
+								allowedFormats: [],
+								placeholder: __( 'Subscribe', 'greenberry' ),
+								onChange: setAttribute( 'buttonLabel' ),
+							} )
 						)
 					)
 				)

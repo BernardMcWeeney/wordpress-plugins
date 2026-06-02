@@ -27,7 +27,7 @@ class Email_Template {
 		$home_url        = home_url( '/' );
 		$accent          = $this->get_accent_color();
 		$logo_url        = $this->get_logo_url();
-		$unsubscribe_url = self::unsubscribe_url( $contact );
+		$unsubscribe_url = ! empty( $contact->id ) ? self::unsubscribe_url( $contact ) : '';
 		$preheader       = sanitize_text_field( $preheader );
 
 		ob_start();
@@ -77,11 +77,15 @@ class Email_Template {
 										);
 										?>
 									</p>
-									<p style="margin:0;">
-										<a href="<?php echo esc_url( $unsubscribe_url ); ?>" style="color:<?php echo esc_attr( $accent ); ?>;">
-											<?php esc_html_e( 'Unsubscribe', 'greenberry' ); ?>
-										</a>
-									</p>
+									<?php if ( $unsubscribe_url ) : ?>
+										<p style="margin:0;">
+											<a href="<?php echo esc_url( $unsubscribe_url ); ?>" style="color:<?php echo esc_attr( $accent ); ?>;">
+												<?php esc_html_e( 'Unsubscribe', 'greenberry' ); ?>
+											</a>
+										</p>
+									<?php else : ?>
+										<p style="margin:0;"><?php esc_html_e( 'This is a Greenberry test email.', 'greenberry' ); ?></p>
+									<?php endif; ?>
 								</td>
 							</tr>
 						</table>

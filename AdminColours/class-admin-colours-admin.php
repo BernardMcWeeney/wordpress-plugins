@@ -146,19 +146,25 @@ class Admin {
 						<input type="hidden" name="action" value="greenberry_admin_colours_save">
 						<?php wp_nonce_field( 'greenberry_admin_colours_save' ); ?>
 
-						<fieldset class="greenberry-field">
+						<fieldset class="greenberry-field greenberry-source-cards" data-greenberry-colour-source>
 							<legend class="screen-reader-text"><?php esc_html_e( 'Colour source', 'greenberry' ); ?></legend>
-							<label class="greenberry-radio-field">
+							<label class="greenberry-source-card">
 								<input type="radio" name="greenberry_admin_colours[source]" value="<?php echo esc_attr( Settings::SOURCE_THEME ); ?>" <?php checked( $settings['source'], Settings::SOURCE_THEME ); ?>>
-								<span><?php esc_html_e( 'Use WordPress theme presets', 'greenberry' ); ?></span>
+								<span>
+									<strong><?php esc_html_e( 'Theme presets', 'greenberry' ); ?></strong>
+									<small><?php esc_html_e( 'Follow the active block theme palette automatically.', 'greenberry' ); ?></small>
+								</span>
 							</label>
-							<label class="greenberry-radio-field">
+							<label class="greenberry-source-card">
 								<input type="radio" name="greenberry_admin_colours[source]" value="<?php echo esc_attr( Settings::SOURCE_CUSTOM ); ?>" <?php checked( $settings['source'], Settings::SOURCE_CUSTOM ); ?>>
-								<span><?php esc_html_e( 'Use custom colours', 'greenberry' ); ?></span>
+								<span>
+									<strong><?php esc_html_e( 'Custom colours', 'greenberry' ); ?></strong>
+									<small><?php esc_html_e( 'Override the generated admin scheme with explicit colours.', 'greenberry' ); ?></small>
+								</span>
 							</label>
 						</fieldset>
 
-						<div class="greenberry-section">
+						<div class="greenberry-section" data-greenberry-custom-colours>
 							<h3><?php esc_html_e( 'Custom Colours', 'greenberry' ); ?></h3>
 							<div class="greenberry-colour-fields">
 								<?php foreach ( $fields as $key => $field ) : ?>
@@ -190,27 +196,24 @@ class Admin {
 
 			<div class="greenberry-panel">
 				<h2><?php esc_html_e( 'WordPress Preset Defaults', 'greenberry' ); ?></h2>
-				<table class="widefat striped greenberry-admin-colours-presets">
-					<thead>
-						<tr>
-							<th><?php esc_html_e( 'Preset variable', 'greenberry' ); ?></th>
-							<th><?php esc_html_e( 'Resolved colour', 'greenberry' ); ?></th>
-							<th><?php esc_html_e( 'Fallback', 'greenberry' ); ?></th>
-						</tr>
-					</thead>
-					<tbody>
-						<?php foreach ( $preset_tokens as $token ) : ?>
-							<tr>
-								<td><code><?php echo esc_html( $token['variable'] ); ?></code></td>
-								<td>
-									<span class="greenberry-colour-swatch" style="background-color: <?php echo esc_attr( $token['colour'] ); ?>"></span>
-									<code><?php echo esc_html( $token['colour'] ); ?></code>
-								</td>
-								<td><code><?php echo esc_html( $token['fallback'] ); ?></code></td>
-							</tr>
-						<?php endforeach; ?>
-					</tbody>
-				</table>
+				<div class="greenberry-token-grid">
+					<?php foreach ( $preset_tokens as $token ) : ?>
+						<div class="greenberry-token-card">
+							<span class="greenberry-colour-swatch" style="background-color: <?php echo esc_attr( $token['colour'] ); ?>"></span>
+							<strong><code><?php echo esc_html( $token['variable'] ); ?></code></strong>
+							<small>
+								<?php
+								printf(
+									/* translators: 1: resolved colour, 2: fallback colour. */
+									esc_html__( 'Resolved: %1$s. Fallback: %2$s.', 'greenberry' ),
+									esc_html( $token['colour'] ),
+									esc_html( $token['fallback'] )
+								);
+								?>
+							</small>
+						</div>
+					<?php endforeach; ?>
+				</div>
 			</div>
 		</div>
 		<?php

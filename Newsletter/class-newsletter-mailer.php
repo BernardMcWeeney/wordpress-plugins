@@ -67,6 +67,46 @@ class Mailer {
 	}
 
 	/**
+	 * Sends a campaign draft to one test recipient without saving or marking sent.
+	 *
+	 * @param array  $data Campaign data.
+	 * @param string $recipient Test recipient email.
+	 * @return true|\WP_Error
+	 */
+	public function send_test_campaign( $data, $recipient ) {
+		$recipient = sanitize_email( $recipient );
+		if ( ! is_email( $recipient ) ) {
+			return new \WP_Error( 'invalid_test_recipient', __( 'Please enter a valid test recipient email address.', 'greenberry' ) );
+		}
+
+		$subject = isset( $data['subject'] ) ? sanitize_text_field( $data['subject'] ) : '';
+		if ( '' === $subject ) {
+			return new \WP_Error( 'missing_campaign_fields', __( 'Campaign name and subject are required.', 'greenberry' ) );
+		}
+
+		$contact = (object) array(
+			'id'    => 0,
+			'email' => $recipient,
+		);
+
+		$html = $this->template->render(
+			$subject,
+			isset( $data['preheader'] ) ? sanitize_text_field( $data['preheader'] ) : '',
+			wpautop( isset( $data['content'] ) ? wp_kses_post( $data['content'] ) : '' ),
+			$contact
+		);
+
+		$sent = wp_mail(
+			$recipient,
+			$subject,
+			$html,
+			array( 'Content-Type: text/html; charset=UTF-8' )
+		);
+
+		return $sent ? true : new \WP_Error( 'test_send_failed', __( 'The test email could not be sent.', 'greenberry' ) );
+	}
+
+	/**
 	 * Sends content to each subscribed contact in a list.
 	 *
 	 * @param int    $list_id List ID.

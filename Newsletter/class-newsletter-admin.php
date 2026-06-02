@@ -45,6 +45,7 @@ class Admin {
 	 */
 	public function init() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ), 20 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_post_greenberry_newsletter_add_contact', array( $this, 'add_contact' ) );
 		add_action( 'admin_post_greenberry_newsletter_import', array( $this, 'import_contacts' ) );
 		add_action( 'admin_post_greenberry_newsletter_export', array( $this, 'export_contacts' ) );
@@ -67,6 +68,36 @@ class Admin {
 			'manage_options',
 			'greenberry-newsletter',
 			array( $this, 'render' )
+		);
+	}
+
+	/**
+	 * Loads admin helpers.
+	 *
+	 * @param string $hook Current admin hook.
+	 * @return void
+	 */
+	public function enqueue_assets( $hook ) {
+		if ( false === strpos( $hook, 'greenberry-newsletter' ) ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'greenberry-newsletter-admin',
+			GREENBERRY_PLUGIN_URL . 'Newsletter/admin.js',
+			array(),
+			GREENBERRY_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'greenberry-newsletter-admin',
+			'greenberryNewsletterAdmin',
+			array(
+				'defaultSubject'   => __( 'Campaign subject', 'greenberry' ),
+				'defaultPreheader' => __( 'Preheader text appears here.', 'greenberry' ),
+				'defaultContent'   => __( 'Write campaign content to preview the email body.', 'greenberry' ),
+			)
 		);
 	}
 
@@ -188,16 +219,25 @@ class Admin {
 	public function create_campaign() {
 		$this->guard_action( 'greenberry_newsletter_create_campaign' );
 
-		$result = $this->repository->create_campaign(
-			array(
-				'name'      => isset( $_POST['name'] ) ? wp_unslash( $_POST['name'] ) : '',
-				'subject'   => isset( $_POST['subject'] ) ? wp_unslash( $_POST['subject'] ) : '',
-				'preheader' => isset( $_POST['preheader'] ) ? wp_unslash( $_POST['preheader'] ) : '',
-				'content'   => isset( $_POST['content'] ) ? wp_unslash( $_POST['content'] ) : '',
-				'list_id'   => isset( $_POST['list_id'] ) ? absint( $_POST['list_id'] ) : 0,
-				'type'      => 'manual',
-			)
+		$data = array(
+			'name'      => isset( $_POST['name'] ) ? wp_unslash( $_POST['name'] ) : '',
+			'subject'   => isset( $_POST['subject'] ) ? wp_unslash( $_POST['subject'] ) : '',
+			'preheader' => isset( $_POST['preheader'] ) ? wp_unslash( $_POST['preheader'] ) : '',
+			'content'   => isset( $_POST['content'] ) ? wp_unslash( $_POST['content'] ) : '',
+			'list_id'   => isset( $_POST['list_id'] ) ? absint( $_POST['list_id'] ) : 0,
+			'type'      => 'manual',
 		);
+
+		if ( ! empty( $_POST['greenberry_send_test'] ) ) {
+			$result = $this->mailer->send_test_campaign(
+				$data,
+				isset( $_POST['test_recipient'] ) ? wp_unslash( $_POST['test_recipient'] ) : ''
+			);
+
+			$this->redirect( 'campaigns', is_wp_error( $result ) ? $result->get_error_code() : 'campaign_test_sent' );
+		}
+
+		$result = $this->repository->create_campaign( $data );
 
 		$this->redirect( 'campaigns', is_wp_error( $result ) ? $result->get_error_code() : 'campaign_created' );
 	}
@@ -463,30 +503,55 @@ class Admin {
 		<div class="greenberry-grid">
 			<div class="greenberry-panel">
 				<h2><?php esc_html_e( 'Create Manual Campaign', 'greenberry' ); ?></h2>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="greenberry-newsletter-composer" data-greenberry-newsletter-composer>
 					<input type="hidden" name="action" value="greenberry_newsletter_create_campaign">
 					<?php wp_nonce_field( 'greenberry_newsletter_create_campaign' ); ?>
-					<div class="greenberry-field">
-						<label for="greenberry-campaign-name"><?php esc_html_e( 'Name', 'greenberry' ); ?></label>
-						<input id="greenberry-campaign-name" type="text" name="name" required>
+
+					<div class="greenberry-newsletter-composer__grid">
+						<div>
+							<div class="greenberry-field">
+								<label for="greenberry-campaign-name"><?php esc_html_e( 'Name', 'greenberry' ); ?></label>
+								<input id="greenberry-campaign-name" type="text" name="name" required>
+							</div>
+							<div class="greenberry-field">
+								<label for="greenberry-campaign-list"><?php esc_html_e( 'List', 'greenberry' ); ?></label>
+								<?php $this->render_list_select( 'greenberry-campaign-list' ); ?>
+							</div>
+							<div class="greenberry-field">
+								<label for="greenberry-campaign-subject"><?php esc_html_e( 'Subject', 'greenberry' ); ?></label>
+								<input id="greenberry-campaign-subject" type="text" name="subject" required data-greenberry-newsletter-subject>
+							</div>
+							<div class="greenberry-field">
+								<label for="greenberry-campaign-preheader"><?php esc_html_e( 'Preheader', 'greenberry' ); ?></label>
+								<input id="greenberry-campaign-preheader" type="text" name="preheader" data-greenberry-newsletter-preheader>
+							</div>
+							<div class="greenberry-field">
+								<label for="greenberry-campaign-content"><?php esc_html_e( 'Content', 'greenberry' ); ?></label>
+								<textarea id="greenberry-campaign-content" name="content" rows="12" data-greenberry-newsletter-content></textarea>
+							</div>
+							<div class="greenberry-field">
+								<label for="greenberry-campaign-test-recipient"><?php esc_html_e( 'Test recipient', 'greenberry' ); ?></label>
+								<input id="greenberry-campaign-test-recipient" type="email" name="test_recipient" value="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>">
+							</div>
+							<div class="greenberry-actions">
+								<?php submit_button( __( 'Save Campaign', 'greenberry' ), 'primary', 'submit', false ); ?>
+								<button type="submit" name="greenberry_send_test" value="1" class="button button-secondary">
+									<?php esc_html_e( 'Send Test', 'greenberry' ); ?>
+								</button>
+							</div>
+						</div>
+
+						<aside class="greenberry-newsletter-preview" aria-live="polite">
+							<div class="greenberry-newsletter-preview__header">
+								<span><?php esc_html_e( 'Inbox preview', 'greenberry' ); ?></span>
+								<strong data-greenberry-newsletter-preview-subject><?php esc_html_e( 'Campaign subject', 'greenberry' ); ?></strong>
+								<small data-greenberry-newsletter-preview-preheader><?php esc_html_e( 'Preheader text appears here.', 'greenberry' ); ?></small>
+							</div>
+							<div class="greenberry-newsletter-preview__body" data-greenberry-newsletter-preview-content>
+								<p><?php esc_html_e( 'Write campaign content to preview the email body.', 'greenberry' ); ?></p>
+							</div>
+						</aside>
 					</div>
-					<div class="greenberry-field">
-						<label for="greenberry-campaign-list"><?php esc_html_e( 'List', 'greenberry' ); ?></label>
-						<?php $this->render_list_select( 'greenberry-campaign-list' ); ?>
-					</div>
-					<div class="greenberry-field">
-						<label for="greenberry-campaign-subject"><?php esc_html_e( 'Subject', 'greenberry' ); ?></label>
-						<input id="greenberry-campaign-subject" type="text" name="subject" required>
-					</div>
-					<div class="greenberry-field">
-						<label for="greenberry-campaign-preheader"><?php esc_html_e( 'Preheader', 'greenberry' ); ?></label>
-						<input id="greenberry-campaign-preheader" type="text" name="preheader">
-					</div>
-					<div class="greenberry-field">
-						<label for="greenberry-campaign-content"><?php esc_html_e( 'Content', 'greenberry' ); ?></label>
-						<textarea id="greenberry-campaign-content" name="content" rows="9"></textarea>
-					</div>
-					<?php submit_button( __( 'Save Campaign', 'greenberry' ) ); ?>
 				</form>
 			</div>
 
@@ -727,6 +792,7 @@ class Admin {
 			),
 			'list_created'              => __( 'List created.', 'greenberry' ),
 			'campaign_created'          => __( 'Campaign saved.', 'greenberry' ),
+			'campaign_test_sent'        => __( 'Test campaign sent.', 'greenberry' ),
 			'campaign_sent'             => sprintf(
 				/* translators: 1: sent count, 2: total count. */
 				__( 'Campaign sent to %1$d of %2$d contacts.', 'greenberry' ),
@@ -741,11 +807,13 @@ class Admin {
 			'list_insert_failed'        => __( 'Could not create the list. The name may already exist.', 'greenberry' ),
 			'missing_campaign_fields'   => __( 'Campaign name and subject are required.', 'greenberry' ),
 			'campaign_insert_failed'    => __( 'Could not create the campaign.', 'greenberry' ),
+			'invalid_test_recipient'    => __( 'Please enter a valid test recipient email address.', 'greenberry' ),
+			'test_send_failed'          => __( 'The test email could not be sent.', 'greenberry' ),
 			'missing_automation_fields' => __( 'Automation name, trigger, and subject are required.', 'greenberry' ),
 		);
 
 		$message = isset( $messages[ $notice ] ) ? $messages[ $notice ] : __( 'Action complete.', 'greenberry' );
-		$type    = false !== strpos( $notice, 'failed' ) || false !== strpos( $notice, 'missing' ) || 'invalid_email' === $notice ? 'error' : 'success';
+		$type    = false !== strpos( $notice, 'failed' ) || false !== strpos( $notice, 'missing' ) || 0 === strpos( $notice, 'invalid_' ) ? 'error' : 'success';
 		?>
 		<div class="notice notice-<?php echo esc_attr( $type ); ?> is-dismissible">
 			<p><?php echo esc_html( $message ); ?></p>

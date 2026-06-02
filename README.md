@@ -9,10 +9,10 @@ Greenberry is a modular WordPress plugin for site administration, publishing, fo
 
 ## Modules
 
-- Newsletter: collect consented subscribers, manage lists with tags, and send email updates.
-- Forms: create GDPR-aware forms that email submissions and attachments without storing responses.
-- Social: prepare and publish matching content to connected social channels.
-- Admin Colours: register and apply custom WordPress admin colour schemes.
+- Newsletter: collect consented subscribers, manage lists with tags, preview campaigns, and send test or live email updates.
+- Forms: create GDPR-aware forms with nested Gutenberg field blocks or reusable saved forms that email submissions and attachments without storing responses.
+- Social: prepare and publish matching content to connected social channels with editor and pre-publish checks.
+- Admin Colours: register and apply simplified WordPress admin colour schemes from theme presets or custom swatches.
 - Admin Login: theme the WordPress login screen with brand colours, logo, messaging, and imagery.
 - Category Featured Image: assign fallback featured images from terms, post types, or global defaults.
 

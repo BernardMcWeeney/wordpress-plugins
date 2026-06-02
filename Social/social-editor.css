@@ -3,10 +3,19 @@
 }
 
 .greenberry-social-editor__channels {
+	display: grid;
+	gap: 8px;
+	margin: 0 0 12px;
+}
+
+.greenberry-social-channel {
 	border: 1px solid #dcdcde;
 	border-radius: 6px;
-	margin: 0 0 12px;
 	padding: 10px 12px 0;
+}
+
+.greenberry-social-channel .components-base-control {
+	margin-bottom: 8px;
 }
 
 .greenberry-social-preview {
@@ -60,5 +69,63 @@
 	line-height: 1.45;
 	margin: 0;
 	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}
+
+.greenberry-social-preview__meta {
+	border-top: 1px solid color-mix(in srgb, var(--wp--preset--color--contrast, #1d2327) 12%, transparent);
+	color: var(--wp--preset--color--contrast-2, #646970);
+	font-size: 12px;
+	margin-top: 12px;
+	padding-top: 10px;
+}
+
+.greenberry-social-checklist {
+	display: grid;
+	gap: 8px;
+	margin: 14px 0;
+	padding: 0;
+}
+
+.greenberry-social-checklist li {
+	align-items: flex-start;
+	display: flex;
+	gap: 8px;
+	margin: 0;
+}
+
+.greenberry-social-checklist li > span:first-child {
+	border-radius: 999px;
+	color: #ffffff;
+	flex: 0 0 auto;
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 18px;
+	min-width: 18px;
+	text-align: center;
+}
+
+.greenberry-social-checklist .is-success > span:first-child {
+	background: #008a20;
+}
+
+.greenberry-social-checklist .is-error > span:first-child {
+	background: #d63638;
+}
+
+.greenberry-social-checklist .is-warning > span:first-child,
+.greenberry-social-checklist .is-info > span:first-child {
+	background: #996800;
+}
+
+.greenberry-social-prepublish-preview {
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	font-size: 13px;
+	line-height: 1.45;
+	margin: 12px 0 0;
+	overflow-wrap: anywhere;
+	padding: 10px;
 	white-space: pre-wrap;
 }

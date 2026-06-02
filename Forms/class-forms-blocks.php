@@ -93,31 +93,52 @@ class Blocks {
 	 * Renders the Form block.
 	 *
 	 * @param array $attributes Block attributes.
+	 * @param string $content Saved nested block content.
+	 * @param \WP_Block|null $block Parsed block instance.
 	 * @return string
 	 */
-	public function render_form_block( $attributes ) {
+	public function render_form_block( $attributes, $content = '', $block = null ) {
 		$attributes = wp_parse_args(
 			$attributes,
 			array(
-				'formId'    => 0,
-				'showTitle' => true,
+				'mode'              => 'saved',
+				'formId'            => 0,
+				'showTitle'         => true,
+				'title'             => __( 'Contact form', 'greenberry' ),
+				'description'       => __( 'Send a message to the site owner.', 'greenberry' ),
+				'recipientEmail'    => sanitize_email( get_option( 'admin_email' ) ),
+				'subject'           => '[{site_name}] {form_title}',
+				'replyToField'      => 'email',
+				'copyToField'       => 'email',
+				'copySubject'       => __( 'We received your message', 'greenberry' ),
+				'copyMessage'       => __( 'Thanks for contacting {site_name}. We have received your message and will reply if needed.', 'greenberry' ),
+				'submitLabel'       => __( 'Send message', 'greenberry' ),
+				'successMessage'    => __( 'Thanks. Your message has been sent.', 'greenberry' ),
+				'turnstileRequired' => true,
 			)
 		);
 
-		$form = $attributes['formId'] ? $this->repository->get_form( absint( $attributes['formId'] ) ) : $this->repository->get_first_form();
+		$visual_form = $this->get_visual_form_from_block( $attributes, $block );
+		$is_visual   = 'visual' === $attributes['mode'] && $visual_form;
+		$form        = $is_visual ? $visual_form : ( $attributes['formId'] ? $this->repository->get_form( absint( $attributes['formId'] ) ) : $this->repository->get_first_form() );
+
 		if ( ! $form ) {
 			return current_user_can( 'manage_options' )
 				? '<p class="greenberry-form greenberry-form--notice">' . esc_html__( 'Create a Greenberry form before using this block.', 'greenberry' ) . '</p>'
 				: '';
 		}
 
-		$form_id  = absint( $form['id'] );
-		$block_id = wp_unique_id( 'greenberry-form-' . $form_id . '-' );
-		$message  = $this->get_query_message( $form );
+		$form_id     = $is_visual ? 0 : absint( $form['id'] );
+		$form_key    = $is_visual ? $this->store_visual_form( $form ) : '';
+		$block_id    = wp_unique_id( 'greenberry-form-' . ( $is_visual ? $form_key : $form_id ) . '-' );
+		$message     = $this->get_query_message( $form, $is_visual ? $form_key : (string) $form_id, $is_visual );
+		$endpoint    = $is_visual ? rest_url( 'greenberry/v1/forms/submit-block/' . $form_key ) : rest_url( 'greenberry/v1/forms/submit/' . $form_id );
+		$nonce_name  = 'greenberry_form_nonce';
+		$nonce_action = $is_visual ? 'greenberry_form_submit_block_' . $form_key : 'greenberry_form_submit_' . $form_id;
 
 		ob_start();
 		?>
-		<div class="greenberry-form" data-endpoint="<?php echo esc_url( rest_url( 'greenberry/v1/forms/submit/' . $form_id ) ); ?>" data-success-message="<?php echo esc_attr( $form['success_message'] ); ?>">
+		<div class="greenberry-form" data-endpoint="<?php echo esc_url( $endpoint ); ?>" data-success-message="<?php echo esc_attr( $form['success_message'] ); ?>">
 			<?php if ( ! empty( $attributes['showTitle'] ) ) : ?>
 				<h2 class="greenberry-form__heading"><?php echo esc_html( $form['title'] ); ?></h2>
 			<?php endif; ?>
@@ -128,8 +149,12 @@ class Blocks {
 
 			<form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="greenberry-form__form">
 				<input type="hidden" name="action" value="greenberry_forms_submit">
-				<input type="hidden" name="form_id" value="<?php echo esc_attr( $form_id ); ?>">
-				<?php wp_nonce_field( 'greenberry_form_submit_' . $form_id, 'greenberry_form_nonce' ); ?>
+				<?php if ( $is_visual ) : ?>
+					<input type="hidden" name="form_key" value="<?php echo esc_attr( $form_key ); ?>">
+				<?php else : ?>
+					<input type="hidden" name="form_id" value="<?php echo esc_attr( $form_id ); ?>">
+				<?php endif; ?>
+				<?php wp_nonce_field( $nonce_action, $nonce_name ); ?>
 
 				<div class="greenberry-form__fields">
 					<?php foreach ( $form['fields'] as $field ) : ?>
@@ -152,6 +177,123 @@ class Blocks {
 		</div>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Builds a temporary form definition from nested Gutenberg field blocks.
+	 *
+	 * @param array          $attributes Parent block attributes.
+	 * @param \WP_Block|null $block Parsed block instance.
+	 * @return array|null
+	 */
+	private function get_visual_form_from_block( $attributes, $block ) {
+		if ( ! $block || empty( $block->parsed_block['innerBlocks'] ) || ! is_array( $block->parsed_block['innerBlocks'] ) ) {
+			return null;
+		}
+
+		$fields = $this->get_visual_fields( $block->parsed_block['innerBlocks'] );
+		if ( empty( $fields ) ) {
+			return null;
+		}
+
+		$recipient = isset( $attributes['recipientEmail'] ) ? sanitize_email( $attributes['recipientEmail'] ) : '';
+		if ( ! is_email( $recipient ) ) {
+			$recipient = sanitize_email( get_option( 'admin_email' ) );
+		}
+
+		return array(
+			'id'                 => 0,
+			'title'              => isset( $attributes['title'] ) && '' !== $attributes['title'] ? sanitize_text_field( $attributes['title'] ) : __( 'Contact form', 'greenberry' ),
+			'description'        => isset( $attributes['description'] ) ? sanitize_textarea_field( $attributes['description'] ) : '',
+			'recipient_email'    => $recipient,
+			'subject'            => isset( $attributes['subject'] ) && '' !== $attributes['subject'] ? sanitize_text_field( $attributes['subject'] ) : '[{site_name}] {form_title}',
+			'reply_to_field'     => isset( $attributes['replyToField'] ) ? sanitize_key( $attributes['replyToField'] ) : '',
+			'copy_to_field'      => isset( $attributes['copyToField'] ) ? sanitize_key( $attributes['copyToField'] ) : '',
+			'copy_subject'       => isset( $attributes['copySubject'] ) && '' !== $attributes['copySubject'] ? sanitize_text_field( $attributes['copySubject'] ) : __( 'We received your message', 'greenberry' ),
+			'copy_message'       => isset( $attributes['copyMessage'] ) ? sanitize_textarea_field( $attributes['copyMessage'] ) : __( 'Thanks for contacting {site_name}. We have received your message and will reply if needed.', 'greenberry' ),
+			'submit_label'       => isset( $attributes['submitLabel'] ) && '' !== $attributes['submitLabel'] ? sanitize_text_field( $attributes['submitLabel'] ) : __( 'Send', 'greenberry' ),
+			'success_message'    => isset( $attributes['successMessage'] ) && '' !== $attributes['successMessage'] ? sanitize_text_field( $attributes['successMessage'] ) : __( 'Thanks. Your message has been sent.', 'greenberry' ),
+			'turnstile_required' => ! empty( $attributes['turnstileRequired'] ),
+			'fields'             => $fields,
+		);
+	}
+
+	/**
+	 * Extracts sanitized field definitions from nested blocks.
+	 *
+	 * @param array $inner_blocks Nested parsed blocks.
+	 * @return array<int,array>
+	 */
+	private function get_visual_fields( $inner_blocks ) {
+		$fields     = array();
+		$used_keys  = array();
+		$type_allow = array( 'text', 'email', 'textarea', 'address', 'checkbox', 'file' );
+
+		foreach ( $inner_blocks as $inner_block ) {
+			if ( empty( $inner_block['blockName'] ) || 'greenberry/form-field' !== $inner_block['blockName'] ) {
+				continue;
+			}
+
+			$attrs = isset( $inner_block['attrs'] ) && is_array( $inner_block['attrs'] ) ? $inner_block['attrs'] : array();
+			$label = isset( $attrs['label'] ) ? sanitize_text_field( $attrs['label'] ) : '';
+			if ( '' === $label ) {
+				continue;
+			}
+
+			$key = isset( $attrs['key'] ) ? sanitize_key( $attrs['key'] ) : '';
+			if ( '' === $key ) {
+				$key = sanitize_key( sanitize_title( $label ) );
+			}
+			if ( '' === $key ) {
+				$key = 'field';
+			}
+
+			$base_key = $key;
+			$suffix   = 2;
+			while ( isset( $used_keys[ $key ] ) ) {
+				$key = $base_key . '_' . $suffix;
+				++$suffix;
+			}
+			$used_keys[ $key ] = true;
+
+			$type = isset( $attrs['type'] ) ? sanitize_key( $attrs['type'] ) : 'text';
+			if ( ! in_array( $type, $type_allow, true ) ) {
+				$type = 'text';
+			}
+
+			$max_size = isset( $attrs['maxFileSize'] ) ? absint( $attrs['maxFileSize'] ) : 5;
+			if ( $max_size < 1 ) {
+				$max_size = 1;
+			} elseif ( $max_size > 25 ) {
+				$max_size = 25;
+			}
+
+			$fields[] = array(
+				'key'           => $key,
+				'label'         => $label,
+				'type'          => $type,
+				'required'      => ! empty( $attrs['required'] ),
+				'placeholder'   => isset( $attrs['placeholder'] ) ? sanitize_text_field( $attrs['placeholder'] ) : '',
+				'help_text'     => isset( $attrs['helpText'] ) ? sanitize_text_field( $attrs['helpText'] ) : '',
+				'accept'        => isset( $attrs['accept'] ) ? sanitize_text_field( $attrs['accept'] ) : '',
+				'max_file_size' => $max_size,
+			);
+		}
+
+		return $fields;
+	}
+
+	/**
+	 * Stores a visual block form in a short-lived server-side cache for submission.
+	 *
+	 * @param array $form Form definition.
+	 * @return string Form key.
+	 */
+	private function store_visual_form( $form ) {
+		$form_key = hash( 'sha256', wp_json_encode( $form ) );
+		set_transient( Rest::block_form_transient_key( $form_key ), $form, DAY_IN_SECONDS );
+
+		return $form_key;
 	}
 
 	/**
@@ -228,10 +370,17 @@ class Blocks {
 	 * @param array $form Form definition.
 	 * @return string
 	 */
-	private function get_query_message( $form ) {
-		$query_form_id = isset( $_GET['greenberry_form_id'] ) ? absint( $_GET['greenberry_form_id'] ) : 0;
-		if ( absint( $form['id'] ) !== $query_form_id ) {
-			return '';
+	private function get_query_message( $form, $identifier, $is_visual = false ) {
+		if ( $is_visual ) {
+			$query_form_key = isset( $_GET['greenberry_form_key'] ) ? sanitize_key( wp_unslash( $_GET['greenberry_form_key'] ) ) : '';
+			if ( $identifier !== $query_form_key ) {
+				return '';
+			}
+		} else {
+			$query_form_id = isset( $_GET['greenberry_form_id'] ) ? absint( $_GET['greenberry_form_id'] ) : 0;
+			if ( absint( $form['id'] ) !== $query_form_id ) {
+				return '';
+			}
 		}
 
 		if ( isset( $_GET['greenberry_form_sent'] ) ) {
@@ -254,8 +403,11 @@ class Blocks {
 		$forms = array();
 		foreach ( $this->repository->get_forms() as $form ) {
 			$forms[] = array(
-				'id'    => absint( $form['id'] ),
-				'title' => $form['title'],
+				'id'          => absint( $form['id'] ),
+				'title'       => $form['title'],
+				'description' => $form['description'],
+				'submitLabel' => $form['submit_label'],
+				'fields'      => $form['fields'],
 			);
 		}
 

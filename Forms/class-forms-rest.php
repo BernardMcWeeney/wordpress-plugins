@@ -70,6 +70,22 @@ class Rest {
 				),
 			)
 		);
+
+		register_rest_route(
+			'greenberry/v1',
+			'/forms/submit-block/(?P<form_key>[a-f0-9]{64})',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'handle_rest_submit_block' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'form_key' => array(
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -99,13 +115,62 @@ class Rest {
 	}
 
 	/**
+	 * Handles REST submissions for visual block-built forms.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function handle_rest_submit_block( \WP_REST_Request $request ) {
+		$form_key = sanitize_key( $request['form_key'] );
+		$form     = $this->get_block_form( $form_key );
+
+		if ( is_wp_error( $form ) ) {
+			return $form;
+		}
+
+		$result = $this->submit_form_config(
+			$form,
+			'block_' . $form_key,
+			'greenberry_form_submit_block_' . $form_key,
+			$request->get_params(),
+			$request->get_file_params()
+		);
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return rest_ensure_response(
+			array(
+				'success' => true,
+				'message' => $result['message'],
+			)
+		);
+	}
+
+	/**
 	 * Handles non-JS form submissions.
 	 *
 	 * @return void
 	 */
 	public function handle_form_post() {
-		$form_id = isset( $_POST['form_id'] ) ? absint( $_POST['form_id'] ) : 0;
-		$result  = $this->submit_form( $form_id, wp_unslash( $_POST ), $_FILES );
+		$form_id  = isset( $_POST['form_id'] ) ? absint( $_POST['form_id'] ) : 0;
+		$form_key = isset( $_POST['form_key'] ) ? sanitize_key( wp_unslash( $_POST['form_key'] ) ) : '';
+
+		if ( '' !== $form_key ) {
+			$form = $this->get_block_form( $form_key );
+			$result = is_wp_error( $form )
+				? $form
+				: $this->submit_form_config(
+					$form,
+					'block_' . $form_key,
+					'greenberry_form_submit_block_' . $form_key,
+					wp_unslash( $_POST ),
+					$_FILES
+				);
+		} else {
+			$result = $this->submit_form( $form_id, wp_unslash( $_POST ), $_FILES );
+		}
 
 		$redirect = wp_get_referer();
 		if ( ! $redirect ) {
@@ -113,32 +178,34 @@ class Rest {
 		}
 
 		$redirect = remove_query_arg(
-			array( 'greenberry_form_sent', 'greenberry_form_error', 'greenberry_form_id' ),
+			array( 'greenberry_form_sent', 'greenberry_form_error', 'greenberry_form_id', 'greenberry_form_key' ),
 			$redirect
 		);
 
 		if ( is_wp_error( $result ) ) {
-			wp_safe_redirect(
-				add_query_arg(
-					array(
-						'greenberry_form_id'    => $form_id,
-						'greenberry_form_error' => rawurlencode( $result->get_error_message() ),
-					),
-					$redirect
-				)
+			$args = array(
+				'greenberry_form_error' => rawurlencode( $result->get_error_message() ),
 			);
+			if ( '' !== $form_key ) {
+				$args['greenberry_form_key'] = $form_key;
+			} else {
+				$args['greenberry_form_id'] = $form_id;
+			}
+
+			wp_safe_redirect( add_query_arg( $args, $redirect ) );
 			exit;
 		}
 
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'greenberry_form_id'   => $form_id,
-					'greenberry_form_sent' => '1',
-				),
-				$redirect
-			)
+		$args = array(
+			'greenberry_form_sent' => '1',
 		);
+		if ( '' !== $form_key ) {
+			$args['greenberry_form_key'] = $form_key;
+		} else {
+			$args['greenberry_form_id'] = $form_id;
+		}
+
+		wp_safe_redirect( add_query_arg( $args, $redirect ) );
 		exit;
 	}
 
@@ -156,7 +223,27 @@ class Rest {
 			return new \WP_Error( 'form_not_found', __( 'This form is not available.', 'greenberry' ), array( 'status' => 404 ) );
 		}
 
-		if ( empty( $data['greenberry_form_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( $data['greenberry_form_nonce'] ), 'greenberry_form_submit_' . absint( $form['id'] ) ) ) {
+		return $this->submit_form_config(
+			$form,
+			absint( $form['id'] ),
+			'greenberry_form_submit_' . absint( $form['id'] ),
+			$data,
+			$files
+		);
+	}
+
+	/**
+	 * Validates and emails a normalized form configuration.
+	 *
+	 * @param array      $form Form definition.
+	 * @param int|string $rate_limit_id Rate-limit identifier.
+	 * @param string     $nonce_action Nonce action.
+	 * @param array      $data Request data.
+	 * @param array      $files Uploaded files.
+	 * @return array|\WP_Error
+	 */
+	private function submit_form_config( $form, $rate_limit_id, $nonce_action, $data, $files ) {
+		if ( empty( $data['greenberry_form_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( $data['greenberry_form_nonce'] ), $nonce_action ) ) {
 			return new \WP_Error( 'invalid_nonce', __( 'The form expired. Please refresh the page and try again.', 'greenberry' ), array( 'status' => 403 ) );
 		}
 
@@ -164,7 +251,7 @@ class Rest {
 			return new \WP_Error( 'spam_check_failed', __( 'The form could not be accepted.', 'greenberry' ), array( 'status' => 400 ) );
 		}
 
-		if ( $this->is_rate_limited( $form['id'] ) ) {
+		if ( $this->is_rate_limited( $rate_limit_id ) ) {
 			return new \WP_Error( 'rate_limited', __( 'Please wait before trying again.', 'greenberry' ), array( 'status' => 429 ) );
 		}
 
@@ -191,11 +278,41 @@ class Rest {
 			return $result;
 		}
 
-		$this->increment_rate_limit( $form['id'] );
+		$this->increment_rate_limit( $rate_limit_id );
 
 		return array(
 			'message' => $form['success_message'],
 		);
+	}
+
+	/**
+	 * Gets the transient key for a visual block form.
+	 *
+	 * @param string $form_key Form key.
+	 * @return string
+	 */
+	public static function block_form_transient_key( $form_key ) {
+		return 'greenberry_form_block_' . sanitize_key( $form_key );
+	}
+
+	/**
+	 * Loads a visual block form from the short-lived server-side cache.
+	 *
+	 * @param string $form_key Form key.
+	 * @return array|\WP_Error
+	 */
+	private function get_block_form( $form_key ) {
+		$form_key = sanitize_key( $form_key );
+		if ( ! preg_match( '/^[a-f0-9]{64}$/', $form_key ) ) {
+			return new \WP_Error( 'form_not_found', __( 'This form is not available.', 'greenberry' ), array( 'status' => 404 ) );
+		}
+
+		$form = get_transient( self::block_form_transient_key( $form_key ) );
+		if ( ! is_array( $form ) || empty( $form['fields'] ) || ! is_array( $form['fields'] ) ) {
+			return new \WP_Error( 'form_expired', __( 'The form expired. Please refresh the page and try again.', 'greenberry' ), array( 'status' => 410 ) );
+		}
+
+		return $form;
 	}
 
 	/**
@@ -477,7 +594,7 @@ class Rest {
 	/**
 	 * Checks basic IP/form rate limiting.
 	 *
-	 * @param int $form_id Form ID.
+	 * @param int|string $form_id Form ID.
 	 * @return bool
 	 */
 	private function is_rate_limited( $form_id ) {
@@ -489,7 +606,7 @@ class Rest {
 	/**
 	 * Increments rate limiting.
 	 *
-	 * @param int $form_id Form ID.
+	 * @param int|string $form_id Form ID.
 	 * @return void
 	 */
 	private function increment_rate_limit( $form_id ) {
@@ -502,11 +619,11 @@ class Rest {
 	/**
 	 * Gets a privacy-preserving rate-limit key.
 	 *
-	 * @param int $form_id Form ID.
+	 * @param int|string $form_id Form ID.
 	 * @return string
 	 */
 	private function rate_limit_key( $form_id ) {
-		return 'greenberry_form_' . absint( $form_id ) . '_' . hash( 'sha256', $this->get_ip_address() . wp_salt( 'nonce' ) );
+		return 'greenberry_form_' . sanitize_key( (string) $form_id ) . '_' . hash( 'sha256', $this->get_ip_address() . wp_salt( 'nonce' ) );
 	}
 
 	/**

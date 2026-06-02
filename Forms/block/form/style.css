@@ -31,15 +31,34 @@
 	grid-template-columns: minmax(0, 1fr);
 }
 
+.greenberry-form__fields--editor {
+	display: block;
+}
+
+.greenberry-form__fields--editor > .block-editor-inner-blocks > .block-editor-block-list__layout {
+	display: grid;
+	gap: 14px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
 @media (min-width: 760px) {
 	.greenberry-form__fields {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.greenberry-form__fields--editor > .block-editor-inner-blocks > .block-editor-block-list__layout {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
 	.greenberry-form__field--textarea,
 	.greenberry-form__field--address,
 	.greenberry-form__field--checkbox,
-	.greenberry-form__field--file {
+	.greenberry-form__field--file,
+	.greenberry-form-field-editor--textarea,
+	.greenberry-form-field-editor--address,
+	.greenberry-form-field-editor--checkbox,
+	.greenberry-form-field-editor--file,
+	.greenberry-form__fields--editor .block-list-appender {
 		grid-column: 1 / -1;
 	}
 }
@@ -81,6 +100,20 @@
 .greenberry-form__field textarea {
 	min-height: 132px;
 	resize: vertical;
+}
+
+.greenberry-form--editor input:disabled,
+.greenberry-form--editor textarea:disabled {
+	cursor: default;
+	opacity: 1;
+}
+
+.greenberry-form-field-editor {
+	min-width: 0;
+}
+
+.greenberry-form-field-editor .greenberry-form__field {
+	height: 100%;
 }
 
 .greenberry-form__field input:focus,

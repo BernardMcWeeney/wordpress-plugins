@@ -4,9 +4,13 @@
 	}
 
 	var el = wp.element.createElement;
+	var Fragment = wp.element.Fragment;
 	var __ = wp.i18n.__;
+	var sprintf = wp.i18n.sprintf;
 	var registerPlugin = wp.plugins.registerPlugin;
-	var PluginDocumentSettingPanel = ( wp.editPost && wp.editPost.PluginDocumentSettingPanel ) || ( wp.editor && wp.editor.PluginDocumentSettingPanel );
+	var editPost = wp.editPost || wp.editor;
+	var PluginDocumentSettingPanel = editPost.PluginDocumentSettingPanel;
+	var PluginPrePublishPanel = editPost.PluginPrePublishPanel;
 	var Button = wp.components.Button;
 	var Notice = wp.components.Notice;
 	var SelectControl = wp.components.SelectControl;
@@ -93,7 +97,17 @@
 			.substring( 0, 2 ) || 'G';
 	}
 
-	function SocialPanel() {
+	function getProviderLabels( selectedChannels ) {
+		return selectedChannels.length
+			? selectedChannels
+					.map( function ( provider ) {
+						return data.providers[ provider ].label;
+					} )
+					.join( ', ' )
+			: __( 'No channels selected', 'greenberry' );
+	}
+
+	function useSocialState() {
 		var metaKey = data.publishModeMeta || 'greenberry_social_enabled';
 		var channelsKey = data.channelsMeta || 'greenberry_social_channels';
 		var messageKey = data.messageMeta || 'greenberry_social_message';
@@ -110,13 +124,10 @@
 				author: user && user.name ? user.name : '',
 			};
 		} );
-		var editPost = useDispatch( 'core/editor' ).editPost;
 		var meta = editorState.meta || {};
 		var mode = meta[ metaKey ] || 'inherit';
 		var customMessage = meta[ messageKey ] || '';
 		var selectedChannels = selectedChannelsFromMeta( meta );
-		var hasExplicitChannels = Array.isArray( meta[ channelsKey ] ) && meta[ channelsKey ].length > 0;
-		var providerKeys = Object.keys( data.providers || {} );
 		var context = {
 			siteName: data.siteName || '',
 			title: getTitleText( editorState.title ),
@@ -127,17 +138,130 @@
 		};
 		var preview = replaceTokens( customMessage || data.messageTemplate, context );
 
+		return {
+			meta: meta,
+			mode: mode,
+			customMessage: customMessage,
+			selectedChannels: selectedChannels,
+			hasExplicitChannels: Array.isArray( meta[ channelsKey ] ) && meta[ channelsKey ].length > 0,
+			metaKey: metaKey,
+			channelsKey: channelsKey,
+			messageKey: messageKey,
+			preview: preview,
+		};
+	}
+
+	function getChecks( state ) {
+		var checks = [];
+
+		if ( ! data.enabled ) {
+			checks.push( {
+				status: 'error',
+				label: __( 'Social publishing is disabled in Greenberry settings.', 'greenberry' ),
+			} );
+		}
+
+		if ( 'off' === state.mode ) {
+			checks.push( {
+				status: 'info',
+				label: __( 'This post is set not to publish socially.', 'greenberry' ),
+			} );
+		}
+
+		if ( data.enabled && 'off' !== state.mode && ! state.selectedChannels.length ) {
+			checks.push( {
+				status: 'error',
+				label: __( 'No ready social channels are selected.', 'greenberry' ),
+			} );
+		}
+
+		if ( data.enabled && 'off' !== state.mode && ! state.preview ) {
+			checks.push( {
+				status: 'error',
+				label: __( 'The social message preview is empty.', 'greenberry' ),
+			} );
+		}
+
+		if ( -1 !== state.selectedChannels.indexOf( 'bluesky' ) && state.preview.length > 300 ) {
+			checks.push( {
+				status: 'warning',
+				label: __( 'Bluesky copy is over 300 characters.', 'greenberry' ),
+			} );
+		}
+
+		if ( ! checks.length ) {
+			checks.push( {
+				status: 'success',
+				label: __( 'Social publishing is ready for the selected channels.', 'greenberry' ),
+			} );
+		}
+
+		return checks;
+	}
+
+	function Checklist( props ) {
+		return el(
+			'ul',
+			{ className: 'greenberry-social-checklist' },
+			getChecks( props.state ).map( function ( check, index ) {
+				return el(
+					'li',
+					{ key: index, className: 'is-' + check.status },
+					el( 'span', { 'aria-hidden': true }, 'success' === check.status ? 'OK' : 'error' === check.status ? 'X' : '!' ),
+					el( 'span', null, check.label )
+				);
+			} )
+		);
+	}
+
+	function SocialPreview( props ) {
+		var state = props.state;
+
+		return el(
+			'div',
+			{ className: 'greenberry-social-preview' },
+			el(
+				'div',
+				{ className: 'greenberry-social-preview__brand' },
+				data.logoUrl
+					? el( 'img', { src: data.logoUrl, alt: '' } )
+					: el( 'span', null, initials( data.siteName ) ),
+				el(
+					'div',
+					null,
+					el( 'strong', null, data.siteName || __( 'Site', 'greenberry' ) ),
+					el( 'em', null, getProviderLabels( state.selectedChannels ) )
+				)
+			),
+			el( 'p', null, state.preview || __( 'Preview appears after adding post copy.', 'greenberry' ) ),
+			el(
+				'div',
+				{ className: 'greenberry-social-preview__meta' },
+				sprintf(
+					/* translators: %d: character count. */
+					__( '%d characters', 'greenberry' ),
+					state.preview.length
+				)
+			)
+		);
+	}
+
+	function SocialPanel() {
+		var state = useSocialState();
+		var editPostDispatch = useDispatch( 'core/editor' ).editPost;
+		var providerKeys = Object.keys( data.providers || {} );
+
 		function updateMeta( key, value ) {
 			var next = {};
-			Object.keys( meta ).forEach( function ( metaName ) {
-				next[ metaName ] = meta[ metaName ];
+			Object.keys( state.meta ).forEach( function ( metaName ) {
+				next[ metaName ] = state.meta[ metaName ];
 			} );
 			next[ key ] = value;
-			editPost( { meta: next } );
+			editPostDispatch( { meta: next } );
 		}
 
 		function updateChannel( provider, checked ) {
-			var next = selectedChannels.slice();
+			var next = state.selectedChannels.slice();
 			if ( checked && -1 === next.indexOf( provider ) ) {
 				next.push( provider );
 			}
@@ -146,7 +270,7 @@
 					return item !== provider;
 				} );
 			}
-			updateMeta( channelsKey, next );
+			updateMeta( state.channelsKey, next );
 		}
 
 		return el(
@@ -161,14 +285,14 @@
 				: null,
 			el( SelectControl, {
 				label: __( 'Publishing', 'greenberry' ),
-				value: mode,
+				value: state.mode,
 				options: [
 					{ label: __( 'Use Social rules', 'greenberry' ), value: 'inherit' },
 					{ label: __( 'Publish this post', 'greenberry' ), value: 'on' },
 					{ label: __( 'Do not publish', 'greenberry' ), value: 'off' },
 				],
 				onChange: function ( value ) {
-					updateMeta( metaKey, value );
+					updateMeta( state.metaKey, value );
 				},
 			} ),
 			el(
@@ -176,26 +300,29 @@
 				{ className: 'greenberry-social-editor__channels' },
 				providerKeys.map( function ( provider ) {
 					var item = data.providers[ provider ];
-					return el( ToggleControl, {
-						key: provider,
-						label: item.label,
-						help: item.status,
-						checked: -1 !== selectedChannels.indexOf( provider ),
-						disabled: 'off' === mode || ! data.enabled || ! item.ready,
-						onChange: function ( checked ) {
-							updateChannel( provider, checked );
-						},
-					} );
+					return el(
+						'div',
+						{ className: 'greenberry-social-channel', key: provider },
+						el( ToggleControl, {
+							label: item.label,
+							help: item.status,
+							checked: -1 !== state.selectedChannels.indexOf( provider ),
+							disabled: 'off' === state.mode || ! data.enabled || ! item.ready,
+							onChange: function ( checked ) {
+								updateChannel( provider, checked );
+							},
+						} )
+					);
 				} )
 			),
-			hasExplicitChannels
+			state.hasExplicitChannels
 				? el(
 						Button,
 						{
 							variant: 'secondary',
 							isSmall: true,
 							onClick: function () {
-								updateMeta( channelsKey, [] );
+								updateMeta( state.channelsKey, [] );
 							},
 						},
 						__( 'Use defaults', 'greenberry' )
@@ -203,44 +330,43 @@
 				: null,
 			el( TextareaControl, {
 				label: __( 'Custom message', 'greenberry' ),
-				value: customMessage,
-				rows: 4,
+				help: __( 'Leave empty to use the Social settings template.', 'greenberry' ),
+				value: state.customMessage,
+				rows: 5,
 				onChange: function ( value ) {
-					updateMeta( messageKey, value );
+					updateMeta( state.messageKey, value );
 				},
 			} ),
+			el( Checklist, { state: state } ),
+			el( SocialPreview, { state: state } )
+		);
+	}
+
+	function PrePublishChecks() {
+		var state = useSocialState();
+
+		if ( ! PluginPrePublishPanel ) {
+			return null;
+		}
+
+		return el(
+			PluginPrePublishPanel,
+			{
+				title: __( 'Social Checklist', 'greenberry' ),
+				initialOpen: false,
+			},
+			el( Checklist, { state: state } ),
 			el(
-				'div',
-				{ className: 'greenberry-social-preview' },
-				el(
-					'div',
-					{ className: 'greenberry-social-preview__brand' },
-					data.logoUrl
-						? el( 'img', { src: data.logoUrl, alt: '' } )
-						: el( 'span', null, initials( data.siteName ) ),
-					el(
-						'div',
-						null,
-						el( 'strong', null, data.siteName || __( 'Site', 'greenberry' ) ),
-						el(
-							'em',
-							null,
-							selectedChannels.length
-								? selectedChannels
-										.map( function ( provider ) {
-											return data.providers[ provider ].label;
-										} )
-										.join( ', ' )
-								: __( 'No channels selected', 'greenberry' )
-						)
-					)
-				),
-				el( 'p', null, preview || __( 'Preview appears after adding post copy.', 'greenberry' ) )
+				'p',
+				{ className: 'greenberry-social-prepublish-preview' },
+				state.preview || __( 'No social copy is ready.', 'greenberry' )
 			)
 		);
 	}
 
 	registerPlugin( 'greenberry-social', {
-		render: SocialPanel,
+		render: function () {
+			return el( Fragment, null, el( SocialPanel ), el( PrePublishChecks ) );
+		},
 	} );
 } )( window.wp, window.greenberrySocialEditor );

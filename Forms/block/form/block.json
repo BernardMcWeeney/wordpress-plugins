@@ -5,9 +5,13 @@
 	"title": "Greenberry Form",
 	"category": "widgets",
 	"icon": "feedback",
-	"description": "Display a saved GDPR-aware Greenberry form.",
+	"description": "Build or display a GDPR-aware Greenberry form.",
 	"textdomain": "greenberry",
 	"attributes": {
+		"mode": {
+			"type": "string",
+			"default": "visual"
+		},
 		"formId": {
 			"type": "number",
 			"default": 0
@@ -15,10 +19,62 @@
 		"showTitle": {
 			"type": "boolean",
 			"default": true
+		},
+		"title": {
+			"type": "string",
+			"default": "Contact form"
+		},
+		"description": {
+			"type": "string",
+			"default": "Send a message to the site owner."
+		},
+		"recipientEmail": {
+			"type": "string",
+			"default": ""
+		},
+		"subject": {
+			"type": "string",
+			"default": "[{site_name}] {form_title}"
+		},
+		"replyToField": {
+			"type": "string",
+			"default": "email"
+		},
+		"copyToField": {
+			"type": "string",
+			"default": "email"
+		},
+		"copySubject": {
+			"type": "string",
+			"default": "We received your message"
+		},
+		"copyMessage": {
+			"type": "string",
+			"default": "Thanks for contacting {site_name}. We have received your message and will reply if needed."
+		},
+		"submitLabel": {
+			"type": "string",
+			"default": "Send message"
+		},
+		"successMessage": {
+			"type": "string",
+			"default": "Thanks. Your message has been sent."
+		},
+		"turnstileRequired": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"supports": {
 		"align": ["wide", "full"],
+		"color": {
+			"background": true,
+			"text": true
+		},
+		"border": {
+			"color": true,
+			"radius": true
+		},
 		"html": false,
 		"spacing": {
 			"margin": true,
