@@ -102,6 +102,7 @@ class Settings {
 			'siteName'         => get_bloginfo( 'name' ),
 			'homeUrl'          => home_url( '/' ),
 			'logoUrl'          => $this->get_site_logo_url(),
+			'settingsUrl'      => admin_url( 'admin.php?page=greenberry-social' ),
 			'publishModeMeta'  => 'greenberry_social_enabled',
 			'channelsMeta'     => 'greenberry_social_channels',
 			'messageMeta'      => 'greenberry_social_message',

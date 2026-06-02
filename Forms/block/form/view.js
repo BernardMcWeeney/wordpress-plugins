@@ -29,8 +29,16 @@
 			button.disabled = true;
 		}
 
+		var headers = {};
+		var restNonce = window.greenberryFormsView && window.greenberryFormsView.restNonce;
+		if ( restNonce ) {
+			headers[ 'X-WP-Nonce' ] = restNonce;
+		}
+
 		fetch( endpoint, {
 			method: 'POST',
+			credentials: 'same-origin',
+			headers: headers,
 			body: formData,
 		} )
 			.then( function ( response ) {

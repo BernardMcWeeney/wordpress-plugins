@@ -77,6 +77,7 @@ class Admin {
 			'newsletter'              => 'greenberry-newsletter',
 			'forms'                   => 'greenberry-forms',
 			'social'                  => 'greenberry-social',
+			'stats'                   => 'greenberry-stats',
 			'admin_colours'           => 'greenberry-admin-colours',
 			'admin_login'             => 'greenberry-admin-login',
 			'category_featured_image' => 'greenberry-category-featured-image',

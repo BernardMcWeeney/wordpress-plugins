@@ -250,6 +250,9 @@
 		var state = useSocialState();
 		var editPostDispatch = useDispatch( 'core/editor' ).editPost;
 		var providerKeys = Object.keys( data.providers || {} );
+		var hasReady = providerKeys.some( function ( provider ) {
+			return data.providers[ provider ] && data.providers[ provider ].ready;
+		} );
 
 		function updateMeta( key, value ) {
 			var next = {};
@@ -282,6 +285,18 @@
 			},
 			! data.enabled
 				? el( Notice, { status: 'warning', isDismissible: false }, __( 'Social publishing is disabled.', 'greenberry' ) )
+				: null,
+			data.enabled && ! hasReady
+				? el(
+						Notice,
+						{ status: 'warning', isDismissible: false },
+						el(
+							Fragment,
+							null,
+							__( 'No social accounts are connected yet. ', 'greenberry' ),
+							el( 'a', { href: data.settingsUrl || '#' }, __( 'Connect and test them in Greenberry → Social.', 'greenberry' ) )
+						)
+					)
 				: null,
 			el( SelectControl, {
 				label: __( 'Publishing', 'greenberry' ),

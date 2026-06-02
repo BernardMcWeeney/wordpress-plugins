@@ -1168,10 +1168,16 @@ class Repository {
 			return new \WP_Error( 'missing_automation_fields', __( 'Automation name, trigger, and subject are required.', 'greenberry' ) );
 		}
 
-		$allowed_triggers = array( 'daily_digest', 'weekly_digest', 'post_publish' );
+		$allowed_triggers = array( 'daily_digest', 'weekly_digest', 'monthly_digest', 'yearly_digest', 'post_publish' );
 		if ( ! in_array( $trigger_type, $allowed_triggers, true ) ) {
 			return new \WP_Error( 'invalid_automation_trigger', __( 'Invalid automation trigger.', 'greenberry' ) );
 		}
+
+		$settings = isset( $data['settings'] ) && is_array( $data['settings'] ) ? $data['settings'] : array();
+		$settings['template_id'] = isset( $settings['template_id'] ) ? absint( $settings['template_id'] ) : 0;
+		$settings['categories']  = isset( $settings['categories'] )
+			? array_values( array_unique( array_filter( array_map( 'absint', (array) $settings['categories'] ) ) ) )
+			: array();
 
 		return array(
 			'name'         => $name,
@@ -1180,7 +1186,7 @@ class Repository {
 			'post_types'   => $post_types,
 			'list_id'      => isset( $data['list_id'] ) ? absint( $data['list_id'] ) : 0,
 			'subject'      => $subject,
-			'settings'     => isset( $data['settings'] ) && is_array( $data['settings'] ) ? $data['settings'] : array(),
+			'settings'     => $settings,
 		);
 	}
 
@@ -1213,6 +1219,21 @@ class Repository {
 		$settings = json_decode( (string) $automation->settings, true );
 
 		return is_array( $settings ) && isset( $settings['template_id'] ) ? absint( $settings['template_id'] ) : 0;
+	}
+
+	/**
+	 * Decodes the category term IDs configured for an automation.
+	 *
+	 * @param object $automation Automation object.
+	 * @return array<int,int>
+	 */
+	public function get_automation_categories( $automation ) {
+		$settings = json_decode( (string) $automation->settings, true );
+		if ( ! is_array( $settings ) || empty( $settings['categories'] ) || ! is_array( $settings['categories'] ) ) {
+			return array();
+		}
+
+		return array_values( array_unique( array_filter( array_map( 'absint', $settings['categories'] ) ) ) );
 	}
 
 	/**

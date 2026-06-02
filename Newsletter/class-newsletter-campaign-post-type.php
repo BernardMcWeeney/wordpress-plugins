@@ -128,6 +128,7 @@ class Campaign_Post_Type {
 			<label for="greenberry-campaign-subject"><strong><?php esc_html_e( 'Subject', 'greenberry' ); ?></strong></label>
 			<input type="text" id="greenberry-campaign-subject" name="greenberry_campaign_subject" class="widefat" value="<?php echo esc_attr( $subject ); ?>">
 		</p>
+		<?php Email_Template::render_placeholder_picker( 'greenberry-campaign-subject' ); ?>
 		<p>
 			<label for="greenberry-campaign-preheader"><strong><?php esc_html_e( 'Preheader', 'greenberry' ); ?></strong></label>
 			<input type="text" id="greenberry-campaign-preheader" name="greenberry_campaign_preheader" class="widefat" value="<?php echo esc_attr( $preheader ); ?>">

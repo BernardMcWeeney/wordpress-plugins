@@ -27,7 +27,7 @@ class Module {
 		add_action( 'greenberry_social_publish_post', array( $publisher, 'publish_scheduled_post' ), 10, 1 );
 
 		if ( is_admin() ) {
-			( new Admin( $settings ) )->init();
+			( new Admin( $settings, $publisher ) )->init();
 			( new Editor( $settings ) )->init();
 		}
 	}

@@ -99,6 +99,86 @@ class Email_Template {
 	}
 
 	/**
+	 * Returns the placeholders available in subject lines and titles.
+	 *
+	 * @return array<string,string> Token => human label.
+	 */
+	public static function subject_placeholders() {
+		return array(
+			'{site_name}'  => __( 'Site title', 'greenberry' ),
+			'{date}'       => __( 'Today’s date', 'greenberry' ),
+			'{day}'        => __( 'Day of month', 'greenberry' ),
+			'{month}'      => __( 'Month name', 'greenberry' ),
+			'{year}'       => __( 'Year', 'greenberry' ),
+			'{post_title}' => __( 'Post title (publish trigger)', 'greenberry' ),
+		);
+	}
+
+	/**
+	 * Renders clickable placeholder chips that insert into a text field.
+	 *
+	 * @param string $target_id ID of the input/textarea to insert into.
+	 * @return void
+	 */
+	public static function render_placeholder_picker( $target_id ) {
+		?>
+		<p class="description" style="margin:6px 0 4px;"><?php esc_html_e( 'Placeholders (click to insert):', 'greenberry' ); ?></p>
+		<p class="greenberry-placeholders" style="display:flex;flex-wrap:wrap;gap:4px;margin:0;">
+			<?php foreach ( self::subject_placeholders() as $token => $label ) : ?>
+				<button type="button" class="button button-small greenberry-placeholder" data-target="<?php echo esc_attr( $target_id ); ?>" data-token="<?php echo esc_attr( $token ); ?>" title="<?php echo esc_attr( $label ); ?>"><?php echo esc_html( $token ); ?></button>
+			<?php endforeach; ?>
+		</p>
+		<?php
+		self::print_placeholder_script();
+	}
+
+	/**
+	 * Prints the placeholder insertion script once per request.
+	 *
+	 * @return void
+	 */
+	private static function print_placeholder_script() {
+		static $printed = false;
+		if ( $printed ) {
+			return;
+		}
+		$printed = true;
+		?>
+		<script>
+		( function () {
+			if ( window.greenberryPlaceholdersReady ) {
+				return;
+			}
+			window.greenberryPlaceholdersReady = true;
+			document.addEventListener( 'click', function ( event ) {
+				var button = event.target.closest( '.greenberry-placeholder' );
+				if ( ! button ) {
+					return;
+				}
+				var field = document.getElementById( button.getAttribute( 'data-target' ) );
+				if ( ! field ) {
+					return;
+				}
+				var token = button.getAttribute( 'data-token' );
+				var start = field.selectionStart;
+				var end = field.selectionEnd;
+				if ( typeof start !== 'number' ) {
+					start = field.value.length;
+					end = field.value.length;
+				}
+				field.value = field.value.slice( 0, start ) + token + field.value.slice( end );
+				field.focus();
+				var caret = start + token.length;
+				if ( field.setSelectionRange ) {
+					field.setSelectionRange( caret, caret );
+				}
+			} );
+		} )();
+		</script>
+		<?php
+	}
+
+	/**
 	 * Builds an unsubscribe URL for a contact.
 	 *
 	 * @param object $contact Contact row.

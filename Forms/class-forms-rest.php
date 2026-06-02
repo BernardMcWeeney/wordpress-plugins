@@ -517,10 +517,34 @@ class Rest {
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 
+		$allowed_mimes = array(
+			'jpg|jpeg|jpe' => 'image/jpeg',
+			'gif'          => 'image/gif',
+			'png'          => 'image/png',
+			'webp'         => 'image/webp',
+			'pdf'          => 'application/pdf',
+			'doc'          => 'application/msword',
+			'docx'         => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+		);
+
+		$checked = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'], $allowed_mimes );
+		if ( empty( $checked['ext'] ) || empty( $checked['type'] ) ) {
+			return new \WP_Error(
+				'file_type_not_allowed',
+				sprintf(
+					/* translators: %s: field label. */
+					__( '%s must be an image, PDF, or Word document.', 'greenberry' ),
+					$field['label']
+				),
+				array( 'status' => 400 )
+			);
+		}
+
 		$uploaded = wp_handle_upload(
 			$file,
 			array(
 				'test_form' => false,
+				'mimes'     => $allowed_mimes,
 			)
 		);
 

@@ -317,7 +317,7 @@ class Form_Post_Type {
 	 * @return void
 	 */
 	private static function collect_fields( $blocks, &$fields, &$used_keys ) {
-		$allowed = array( 'text', 'paragraph', 'date', 'signature', 'checkbox', 'option' );
+		$allowed = array( 'text', 'paragraph', 'date', 'signature', 'checkbox', 'option', 'file' );
 
 		foreach ( $blocks as $block ) {
 			if ( empty( $block['blockName'] ) ) {
@@ -359,13 +359,14 @@ class Form_Post_Type {
 			}
 
 			$fields[] = array(
-				'key'         => $key,
-				'label'       => $label,
-				'type'        => $type,
-				'required'    => ! empty( $attrs['required'] ),
-				'placeholder' => isset( $attrs['placeholder'] ) ? sanitize_text_field( $attrs['placeholder'] ) : '',
-				'help_text'   => isset( $attrs['helpText'] ) ? sanitize_text_field( $attrs['helpText'] ) : '',
-				'options'     => isset( $attrs['options'] ) ? self::sanitize_options( $attrs['options'] ) : array(),
+				'key'           => $key,
+				'label'         => $label,
+				'type'          => $type,
+				'required'      => ! empty( $attrs['required'] ),
+				'placeholder'   => isset( $attrs['placeholder'] ) ? sanitize_text_field( $attrs['placeholder'] ) : '',
+				'help_text'     => isset( $attrs['helpText'] ) ? sanitize_text_field( $attrs['helpText'] ) : '',
+				'max_file_size' => isset( $attrs['maxFileSize'] ) ? max( 1, min( 25, absint( $attrs['maxFileSize'] ) ) ) : 10,
+				'options'       => isset( $attrs['options'] ) ? self::sanitize_options( $attrs['options'] ) : array(),
 			);
 		}
 	}
@@ -381,7 +382,7 @@ class Form_Post_Type {
 			return 'paragraph';
 		}
 
-		if ( 'email' === $type || 'file' === $type ) {
+		if ( 'email' === $type ) {
 			return 'text';
 		}
 

@@ -55,6 +55,14 @@ class Blocks {
 			true
 		);
 
+		wp_localize_script(
+			'greenberry-forms-form-view',
+			'greenberryFormsView',
+			array(
+				'restNonce' => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
 		wp_register_style(
 			'greenberry-forms-form',
 			$block_url . 'style.css',
@@ -119,6 +127,7 @@ class Blocks {
 				: '';
 		}
 
+		$form_post   = ( ! $is_visual && ! empty( $form['id'] ) ) ? get_post( absint( $form['id'] ) ) : null;
 		$form_id     = $is_visual ? 0 : absint( $form['id'] );
 		$form_key    = $is_visual ? $this->store_visual_form( $form ) : '';
 		$block_id    = wp_unique_id( 'greenberry-form-' . ( $is_visual ? $form_key : $form_id ) . '-' );
@@ -147,16 +156,22 @@ class Blocks {
 				<?php endif; ?>
 				<?php wp_nonce_field( $nonce_action, $nonce_name ); ?>
 
-				<div class="greenberry-form__fields">
-					<?php foreach ( $form['fields'] as $field ) : ?>
-						<?php $this->render_field( $field, $block_id ); ?>
-					<?php endforeach; ?>
+				<?php if ( $form_post instanceof \WP_Post && '' !== trim( (string) $form_post->post_content ) ) : ?>
+					<div class="greenberry-form__body">
+						<?php echo $this->render_designed_body( $form_post ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					</div>
+				<?php else : ?>
+					<div class="greenberry-form__fields">
+						<?php foreach ( $form['fields'] as $field ) : ?>
+							<?php $this->render_field( $field, $block_id ); ?>
+						<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
 
-					<label class="greenberry-form__honeypot" aria-hidden="true">
-						<span><?php esc_html_e( 'Website', 'greenberry' ); ?></span>
-						<input type="text" name="website" tabindex="-1" autocomplete="off">
-					</label>
-				</div>
+				<label class="greenberry-form__honeypot" aria-hidden="true">
+					<span><?php esc_html_e( 'Website', 'greenberry' ); ?></span>
+					<input type="text" name="website" tabindex="-1" autocomplete="off">
+				</label>
 
 				<?php $this->render_turnstile( $form ); ?>
 
@@ -218,7 +233,7 @@ class Blocks {
 	private function get_visual_fields( $inner_blocks ) {
 		$fields     = array();
 		$used_keys  = array();
-		$type_allow = array( 'text', 'paragraph', 'date', 'signature', 'checkbox', 'option' );
+		$type_allow = array( 'text', 'paragraph', 'date', 'signature', 'checkbox', 'option', 'file' );
 
 		foreach ( $inner_blocks as $inner_block ) {
 			if ( empty( $inner_block['blockName'] ) || 'greenberry/form-field' !== $inner_block['blockName'] ) {
@@ -253,13 +268,14 @@ class Blocks {
 			}
 
 			$fields[] = array(
-				'key'         => $key,
-				'label'       => $label,
-				'type'        => $type,
-				'required'    => ! empty( $attrs['required'] ),
-				'placeholder' => isset( $attrs['placeholder'] ) ? sanitize_text_field( $attrs['placeholder'] ) : '',
-				'help_text'   => isset( $attrs['helpText'] ) ? sanitize_text_field( $attrs['helpText'] ) : '',
-				'options'     => isset( $attrs['options'] ) ? $this->sanitize_options( $attrs['options'] ) : array(),
+				'key'           => $key,
+				'label'         => $label,
+				'type'          => $type,
+				'required'      => ! empty( $attrs['required'] ),
+				'placeholder'   => isset( $attrs['placeholder'] ) ? sanitize_text_field( $attrs['placeholder'] ) : '',
+				'help_text'     => isset( $attrs['helpText'] ) ? sanitize_text_field( $attrs['helpText'] ) : '',
+				'max_file_size' => isset( $attrs['maxFileSize'] ) ? max( 1, min( 25, absint( $attrs['maxFileSize'] ) ) ) : 10,
+				'options'       => isset( $attrs['options'] ) ? $this->sanitize_options( $attrs['options'] ) : array(),
 			);
 		}
 
@@ -277,7 +293,7 @@ class Blocks {
 			return 'paragraph';
 		}
 
-		if ( 'email' === $type || 'file' === $type ) {
+		if ( 'email' === $type ) {
 			return 'text';
 		}
 
@@ -317,6 +333,107 @@ class Blocks {
 	}
 
 	/**
+	 * Renders a saved form's designed block content with fields as real inputs.
+	 *
+	 * Runs the form post through do_blocks so paragraphs, headings, columns and
+	 * other content are preserved, swapping each greenberry/form-field block for
+	 * its input markup via a temporary render filter.
+	 *
+	 * @param \WP_Post $form_post Saved form post.
+	 * @return string
+	 */
+	private function render_designed_body( $form_post ) {
+		add_filter( 'render_block', array( $this, 'render_form_field_in_block' ), 10, 2 );
+		$body = do_blocks( $form_post->post_content );
+		remove_filter( 'render_block', array( $this, 'render_form_field_in_block' ), 10 );
+
+		return $body;
+	}
+
+	/**
+	 * Replaces a form-field block with its input markup during do_blocks.
+	 *
+	 * @param string $block_content Rendered block HTML.
+	 * @param array  $block Parsed block.
+	 * @return string
+	 */
+	public function render_form_field_in_block( $block_content, $block ) {
+		if ( ! empty( $block['blockName'] ) && 'greenberry/form-field' === $block['blockName'] ) {
+			return $this->render_form_field_block( isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array() );
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Renders a single field block to input markup.
+	 *
+	 * @param array $attrs Block attributes.
+	 * @return string
+	 */
+	private function render_form_field_block( $attrs ) {
+		$field = $this->field_from_attrs( $attrs );
+		if ( null === $field ) {
+			return '';
+		}
+
+		ob_start();
+		$this->render_field( $field, wp_unique_id( 'greenberry-field-' ) );
+
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Builds a normalized field definition from a single block's attributes.
+	 *
+	 * @param array $attrs Block attributes.
+	 * @return array|null
+	 */
+	private function field_from_attrs( $attrs ) {
+		$label = isset( $attrs['label'] ) ? sanitize_text_field( $attrs['label'] ) : '';
+		if ( '' === $label ) {
+			return null;
+		}
+
+		$key = isset( $attrs['key'] ) ? sanitize_key( $attrs['key'] ) : '';
+		if ( '' === $key ) {
+			$key = sanitize_key( sanitize_title( $label ) );
+		}
+		if ( '' === $key ) {
+			$key = 'field';
+		}
+
+		$type = isset( $attrs['type'] ) ? $this->normalize_field_type( sanitize_key( $attrs['type'] ) ) : 'text';
+		if ( ! in_array( $type, array( 'text', 'paragraph', 'date', 'signature', 'checkbox', 'option', 'file' ), true ) ) {
+			$type = 'text';
+		}
+
+		return array(
+			'key'           => $key,
+			'label'         => $label,
+			'type'          => $type,
+			'required'      => ! empty( $attrs['required'] ),
+			'placeholder'   => isset( $attrs['placeholder'] ) ? sanitize_text_field( $attrs['placeholder'] ) : '',
+			'help_text'     => isset( $attrs['helpText'] ) ? sanitize_text_field( $attrs['helpText'] ) : '',
+			'max_file_size' => isset( $attrs['maxFileSize'] ) ? max( 1, min( 25, absint( $attrs['maxFileSize'] ) ) ) : 10,
+			'options'       => isset( $attrs['options'] ) ? $this->sanitize_options( $attrs['options'] ) : array(),
+		);
+	}
+
+	/**
+	 * Echoes the HTML required attribute for required fields.
+	 *
+	 * WordPress ships checked(), selected() and disabled() helpers but has no
+	 * equivalent for the required attribute, so this mirrors that convention.
+	 *
+	 * @param bool $required Whether the field is required.
+	 * @return void
+	 */
+	private function required_attr( $required ) {
+		echo $required ? 'required' : '';
+	}
+
+	/**
 	 * Renders one field.
 	 *
 	 * @param array  $field Field definition.
@@ -333,7 +450,7 @@ class Blocks {
 		<?php if ( 'checkbox' === $field['type'] ) : ?>
 			<label class="greenberry-form__field greenberry-form__field--checkbox" for="<?php echo esc_attr( $field_id ); ?>">
 				<span class="greenberry-form__checkbox-row">
-					<input id="<?php echo esc_attr( $field_id ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+					<input id="<?php echo esc_attr( $field_id ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php $this->required_attr( $required ); ?>>
 					<span class="greenberry-form__label-text">
 						<?php echo esc_html( $field['label'] ); ?>
 						<?php if ( $required ) : ?>
@@ -358,20 +475,31 @@ class Blocks {
 			</span>
 
 			<?php if ( 'paragraph' === $field['type'] ) : ?>
-				<textarea id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>" rows="5" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>></textarea>
+				<textarea id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>" rows="5" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php $this->required_attr( $required ); ?>></textarea>
 			<?php elseif ( 'date' === $field['type'] ) : ?>
-				<input id="<?php echo esc_attr( $field_id ); ?>" type="date" name="<?php echo esc_attr( $name ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+				<input id="<?php echo esc_attr( $field_id ); ?>" type="date" name="<?php echo esc_attr( $name ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php $this->required_attr( $required ); ?>>
 			<?php elseif ( 'signature' === $field['type'] ) : ?>
-				<input id="<?php echo esc_attr( $field_id ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" class="greenberry-form__signature-input" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" autocomplete="name" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+				<input id="<?php echo esc_attr( $field_id ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" class="greenberry-form__signature-input" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" autocomplete="name" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php $this->required_attr( $required ); ?>>
 			<?php elseif ( 'option' === $field['type'] ) : ?>
-				<select id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+				<select id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php $this->required_attr( $required ); ?>>
 					<option value=""><?php esc_html_e( 'Select an option', 'greenberry' ); ?></option>
 					<?php foreach ( $this->field_options( $field ) as $option ) : ?>
 						<option value="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $option ); ?></option>
 					<?php endforeach; ?>
 				</select>
+			<?php elseif ( 'file' === $field['type'] ) : ?>
+				<input id="<?php echo esc_attr( $field_id ); ?>" type="file" name="greenberry_files[<?php echo esc_attr( $field['key'] ); ?>]" accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php $this->required_attr( $required ); ?>>
+				<span class="greenberry-form__help">
+					<?php
+					printf(
+						/* translators: %d: maximum file size in MB. */
+						esc_html__( 'Images, PDF, or Word document. Up to %d MB.', 'greenberry' ),
+						isset( $field['max_file_size'] ) ? absint( $field['max_file_size'] ) : 10
+					);
+					?>
+				</span>
 			<?php else : ?>
-				<input id="<?php echo esc_attr( $field_id ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php required( $required ); ?>>
+				<input id="<?php echo esc_attr( $field_id ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" placeholder="<?php echo esc_attr( $field['placeholder'] ); ?>" <?php echo $described_by ? 'aria-describedby="' . esc_attr( $described_by ) . '"' : ''; ?> <?php $this->required_attr( $required ); ?>>
 			<?php endif; ?>
 
 			<?php if ( '' !== $field['help_text'] ) : ?>

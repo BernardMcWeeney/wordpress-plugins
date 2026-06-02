@@ -1,0 +1,40 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "greenberry/newsletter-posts",
+	"title": "Latest Posts (Email)",
+	"category": "widgets",
+	"icon": "list-view",
+	"description": "Insert a configurable list of the latest posts into a Greenberry email design.",
+	"textdomain": "greenberry",
+	"attributes": {
+		"postType": {
+			"type": "string",
+			"default": "post"
+		},
+		"category": {
+			"type": "number",
+			"default": 0
+		},
+		"count": {
+			"type": "number",
+			"default": 5
+		},
+		"showImage": {
+			"type": "boolean",
+			"default": true
+		},
+		"showExcerpt": {
+			"type": "boolean",
+			"default": true
+		},
+		"showButton": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false,
+		"reusable": false
+	}
+}

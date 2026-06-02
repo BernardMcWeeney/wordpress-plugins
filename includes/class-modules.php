@@ -37,6 +37,11 @@ class Modules {
 				'description' => __( 'Publish matching content to connected social channels with branded editor previews and per-post controls.', 'greenberry' ),
 				'default'     => true,
 			),
+			'stats'      => array(
+				'name'        => __( 'Stats', 'greenberry' ),
+				'description' => __( 'Track aggregate post and page views, show counts in content lists, and review daily and weekly top pages.', 'greenberry' ),
+				'default'     => true,
+			),
 			'admin_colours' => array(
 				'name'        => __( 'Admin Colours', 'greenberry' ),
 				'description' => __( 'Register and apply a WordPress administration color scheme from theme presets or custom colours.', 'greenberry' ),
@@ -139,6 +144,10 @@ class Modules {
 
 		if ( $this->is_active( 'social' ) ) {
 			\Greenberry\Social\Module::init();
+		}
+
+		if ( $this->is_active( 'stats' ) ) {
+			\Greenberry\Stats\Module::init();
 		}
 
 		if ( $this->is_active( 'admin_colours' ) ) {

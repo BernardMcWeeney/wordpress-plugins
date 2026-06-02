@@ -407,6 +407,106 @@ class Publisher {
 	}
 
 	/**
+	 * Tests a provider's saved credentials without publishing anything.
+	 *
+	 * @param string $provider Provider key.
+	 * @return true|\WP_Error
+	 */
+	public function test_connection( $provider ) {
+		$settings = $this->settings->get();
+		$config   = isset( $settings['providers'][ $provider ] ) && is_array( $settings['providers'][ $provider ] )
+			? $settings['providers'][ $provider ]
+			: array();
+
+		if ( 'bluesky' === $provider ) {
+			return $this->test_bluesky( $config );
+		}
+
+		if ( 'linkedin' === $provider ) {
+			return $this->test_linkedin( $config );
+		}
+
+		return new \WP_Error( 'unsupported_provider', __( 'Unsupported social provider.', 'greenberry' ) );
+	}
+
+	/**
+	 * Verifies Bluesky credentials by creating a session.
+	 *
+	 * @param array $config Provider config.
+	 * @return true|\WP_Error
+	 */
+	private function test_bluesky( $config ) {
+		if ( empty( $config['identifier'] ) || empty( $config['token'] ) || empty( $config['pds_host'] ) ) {
+			return new \WP_Error( 'bluesky_incomplete', __( 'Add a handle, app password, and PDS host, then save before testing.', 'greenberry' ) );
+		}
+
+		$session = wp_remote_post(
+			untrailingslashit( $config['pds_host'] ) . '/xrpc/com.atproto.server.createSession',
+			array(
+				'timeout' => 20,
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'identifier' => $config['identifier'],
+						'password'   => $config['token'],
+					)
+				),
+			)
+		);
+
+		if ( is_wp_error( $session ) ) {
+			return $session;
+		}
+
+		$code = wp_remote_retrieve_response_code( $session );
+		$body = json_decode( wp_remote_retrieve_body( $session ), true );
+		if ( 200 !== $code || empty( $body['accessJwt'] ) ) {
+			return new \WP_Error( 'bluesky_failed', $this->remote_error_message( $session, __( 'Bluesky rejected the credentials.', 'greenberry' ) ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Verifies a LinkedIn access token.
+	 *
+	 * @param array $config Provider config.
+	 * @return true|\WP_Error
+	 */
+	private function test_linkedin( $config ) {
+		if ( empty( $config['token'] ) || empty( $config['author_urn'] ) ) {
+			return new \WP_Error( 'linkedin_incomplete', __( 'Add an access token and author URN, then save before testing.', 'greenberry' ) );
+		}
+
+		$response = wp_remote_get(
+			'https://api.linkedin.com/v2/me',
+			array(
+				'timeout' => 20,
+				'headers' => array(
+					'Authorization'    => 'Bearer ' . $config['token'],
+					'Linkedin-Version' => $config['version'],
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$code = wp_remote_retrieve_response_code( $response );
+		if ( 401 === $code ) {
+			return new \WP_Error( 'linkedin_unauthorized', $this->remote_error_message( $response, __( 'LinkedIn rejected the access token (401). It may be expired.', 'greenberry' ) ) );
+		}
+
+		// A 403 means the token is valid but lacks scope for /me; posting can still work.
+		if ( 200 !== $code && 403 !== $code ) {
+			return new \WP_Error( 'linkedin_failed', $this->remote_error_message( $response, __( 'LinkedIn connection check failed.', 'greenberry' ) ) );
+		}
+
+		return true;
+	}
+
+	/**
 	 * Replaces message template tokens.
 	 *
 	 * @param string   $template Template.

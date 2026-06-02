@@ -21,7 +21,10 @@
 		{ label: __( 'Signature', 'greenberry' ), value: 'signature' },
 		{ label: __( 'Checkbox', 'greenberry' ), value: 'checkbox' },
 		{ label: __( 'Option', 'greenberry' ), value: 'option' },
+		{ label: __( 'File upload', 'greenberry' ), value: 'file' },
 	];
+
+	var FILE_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx';
 
 	var FORM_TEMPLATE = [
 		[
@@ -132,6 +135,19 @@
 				options: __( 'Option one\nOption two\nOption three', 'greenberry' ),
 			},
 		},
+		{
+			name: 'file',
+			title: __( 'File Upload Field', 'greenberry' ),
+			description: __( 'Accepts images, PDF, and Word documents.', 'greenberry' ),
+			icon: 'upload',
+			attributes: {
+				label: __( 'Attachment', 'greenberry' ),
+				key: 'attachment',
+				type: 'file',
+				required: false,
+				maxFileSize: 10,
+			},
+		},
 	];
 
 	function getForms() {
@@ -168,7 +184,7 @@
 			return 'paragraph';
 		}
 
-		if ( 'email' === type || 'file' === type ) {
+		if ( 'email' === type ) {
 			return 'text';
 		}
 
@@ -207,6 +223,7 @@
 			required: !! attributes.required,
 			placeholder: attributes.placeholder || '',
 			helpText: attributes.helpText || '',
+			maxFileSize: parseInt( attributes.maxFileSize, 10 ) || 10,
 			options: normalizeOptions( attributes.options || __( 'Option one\nOption two\nOption three', 'greenberry' ) ),
 		};
 	}
@@ -259,6 +276,8 @@
 						return el( 'option', { key: option, value: option }, option );
 					} )
 			);
+		} else if ( 'file' === field.type ) {
+			input = el( 'input', { type: 'file', disabled: true, accept: FILE_ACCEPT } );
 		} else {
 			input = el( 'input', {
 				type: 'text',
@@ -353,10 +372,18 @@
 				type: 'string',
 				default: __( 'Option one\nOption two\nOption three', 'greenberry' ),
 			},
+			maxFileSize: {
+				type: 'number',
+				default: 10,
+			},
 		},
 		supports: {
 			html: false,
 			reusable: false,
+		},
+		__experimentalLabel: function ( attributes ) {
+			var label = attributes && attributes.label ? String( attributes.label ).trim() : '';
+			return label || __( 'Form Field', 'greenberry' );
 		},
 		edit: function ( props ) {
 			var attributes = props.attributes;
@@ -423,6 +450,25 @@
 										props.setAttributes( { options: normalizeOptions( value ) } );
 									},
 								} )
+							: null,
+						'file' === field.type
+							? el( TextControl, {
+									label: __( 'Maximum file size (MB)', 'greenberry' ),
+									type: 'number',
+									min: 1,
+									max: 25,
+									value: field.maxFileSize,
+									onChange: function ( value ) {
+										props.setAttributes( { maxFileSize: parseInt( value, 10 ) || 1 } );
+									},
+								} )
+							: null,
+						'file' === field.type
+							? el(
+									Notice,
+									{ status: 'info', isDismissible: false },
+									__( 'Accepts images (JPG, PNG, GIF, WebP), PDF, and Word (DOC, DOCX). Uploads are emailed, then deleted — never stored.', 'greenberry' )
+								)
 							: null,
 						el( TextareaControl, {
 							label: __( 'Help text', 'greenberry' ),

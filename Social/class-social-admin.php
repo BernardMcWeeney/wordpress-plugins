@@ -21,12 +21,21 @@ class Admin {
 	private $settings;
 
 	/**
+	 * Publisher service.
+	 *
+	 * @var Publisher
+	 */
+	private $publisher;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Settings $settings Settings repository.
+	 * @param Settings  $settings Settings repository.
+	 * @param Publisher $publisher Publisher service.
 	 */
-	public function __construct( Settings $settings ) {
-		$this->settings = $settings;
+	public function __construct( Settings $settings, Publisher $publisher ) {
+		$this->settings  = $settings;
+		$this->publisher = $publisher;
 	}
 
 	/**
@@ -37,6 +46,29 @@ class Admin {
 	public function init() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ), 20 );
 		add_action( 'admin_post_greenberry_social_save_settings', array( $this, 'save_settings' ) );
+		add_action( 'wp_ajax_greenberry_social_test_connection', array( $this, 'ajax_test_connection' ) );
+	}
+
+	/**
+	 * Tests a provider connection over AJAX using saved credentials.
+	 *
+	 * @return void
+	 */
+	public function ajax_test_connection() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to test connections.', 'greenberry' ) ), 403 );
+		}
+
+		check_ajax_referer( 'greenberry_social_test_connection', 'nonce' );
+
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$result   = $this->publisher->test_connection( $provider );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array( 'message' => __( 'Connection successful.', 'greenberry' ) ) );
 	}
 
 	/**
@@ -246,6 +278,8 @@ class Admin {
 				<label for="greenberry-bluesky-pds"><?php esc_html_e( 'PDS host', 'greenberry' ); ?></label>
 				<input id="greenberry-bluesky-pds" type="text" name="providers[bluesky][pds_host]" value="<?php echo esc_attr( $config['pds_host'] ); ?>">
 			</div>
+
+			<?php $this->render_test_button( 'bluesky' ); ?>
 		</div>
 		<?php
 	}
@@ -293,7 +327,88 @@ class Admin {
 				<label for="greenberry-linkedin-version"><?php esc_html_e( 'API version', 'greenberry' ); ?></label>
 				<input id="greenberry-linkedin-version" type="text" name="providers[linkedin][version]" value="<?php echo esc_attr( $config['version'] ); ?>" inputmode="numeric">
 			</div>
+
+			<?php $this->render_test_button( 'linkedin' ); ?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Renders a "Test connection" button for a provider.
+	 *
+	 * @param string $provider Provider key.
+	 * @return void
+	 */
+	private function render_test_button( $provider ) {
+		?>
+		<div class="greenberry-field">
+			<button type="button" class="button greenberry-social-test" data-provider="<?php echo esc_attr( $provider ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'greenberry_social_test_connection' ) ); ?>">
+				<?php esc_html_e( 'Test connection', 'greenberry' ); ?>
+			</button>
+			<span class="greenberry-social-test-result" role="status" aria-live="polite" style="margin-left:8px;font-weight:600;"></span>
+			<p class="description"><?php esc_html_e( 'Checks the saved credentials. Save changes before testing.', 'greenberry' ); ?></p>
+		</div>
+		<?php
+		$this->print_test_script();
+	}
+
+	/**
+	 * Prints the connection-test script once per request.
+	 *
+	 * @return void
+	 */
+	private function print_test_script() {
+		static $printed = false;
+		if ( $printed ) {
+			return;
+		}
+		$printed = true;
+		?>
+		<script>
+		( function () {
+			if ( window.greenberrySocialTestReady ) {
+				return;
+			}
+			window.greenberrySocialTestReady = true;
+			document.addEventListener( 'click', function ( event ) {
+				var button = event.target.closest( '.greenberry-social-test' );
+				if ( ! button ) {
+					return;
+				}
+				event.preventDefault();
+				var result = button.parentNode.querySelector( '.greenberry-social-test-result' );
+				button.disabled = true;
+				if ( result ) {
+					result.textContent = '<?php echo esc_js( __( 'Testing…', 'greenberry' ) ); ?>';
+					result.style.color = '#646970';
+				}
+				var body = new FormData();
+				body.append( 'action', 'greenberry_social_test_connection' );
+				body.append( 'provider', button.getAttribute( 'data-provider' ) );
+				body.append( 'nonce', button.getAttribute( 'data-nonce' ) );
+				fetch( window.ajaxurl, { method: 'POST', credentials: 'same-origin', body: body } )
+					.then( function ( response ) {
+						return response.json();
+					} )
+					.then( function ( payload ) {
+						var ok = payload && payload.success;
+						if ( result ) {
+							result.textContent = ( payload && payload.data && payload.data.message ) || ( ok ? 'OK' : 'Failed' );
+							result.style.color = ok ? '#0a5c2b' : '#a91a16';
+						}
+					} )
+					.catch( function () {
+						if ( result ) {
+							result.textContent = '<?php echo esc_js( __( 'Test request failed.', 'greenberry' ) ); ?>';
+							result.style.color = '#a91a16';
+						}
+					} )
+					.finally( function () {
+						button.disabled = false;
+					} );
+			} );
+		} )();
+		</script>
 		<?php
 	}
 

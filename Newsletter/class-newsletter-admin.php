@@ -59,6 +59,7 @@ class Admin {
 		add_action( 'admin_post_greenberry_newsletter_create_automation', array( $this, 'create_automation' ) );
 		add_action( 'admin_post_greenberry_newsletter_update_automation', array( $this, 'update_automation' ) );
 		add_action( 'admin_post_greenberry_newsletter_delete_automation', array( $this, 'delete_automation' ) );
+		add_action( 'admin_post_greenberry_newsletter_send_test_template', array( $this, 'send_test_template' ) );
 		add_action( 'admin_post_greenberry_newsletter_delete_template', array( $this, 'delete_template' ) );
 		add_action( 'admin_init', array( $this, 'redirect_hidden_post_type_lists' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_editor_return' ) );
@@ -340,6 +341,7 @@ class Admin {
 				'subject'      => isset( $_POST['subject'] ) ? wp_unslash( $_POST['subject'] ) : '',
 				'settings'     => array(
 					'template_id' => isset( $_POST['template_id'] ) ? absint( $_POST['template_id'] ) : 0,
+					'categories'  => isset( $_POST['categories'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['categories'] ) ) : array(),
 				),
 			)
 		);
@@ -365,6 +367,7 @@ class Admin {
 				'subject'      => isset( $_POST['subject'] ) ? wp_unslash( $_POST['subject'] ) : '',
 				'settings'     => array(
 					'template_id' => isset( $_POST['template_id'] ) ? absint( $_POST['template_id'] ) : 0,
+					'categories'  => isset( $_POST['categories'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['categories'] ) ) : array(),
 				),
 			)
 		);
@@ -383,6 +386,26 @@ class Admin {
 		$deleted = $this->repository->delete_automation( isset( $_POST['automation_id'] ) ? absint( $_POST['automation_id'] ) : 0 );
 
 		$this->redirect( 'automations', $deleted ? 'automation_deleted' : 'automation_delete_failed' );
+	}
+
+	/**
+	 * Sends a reusable template to a single test recipient.
+	 *
+	 * @return void
+	 */
+	public function send_test_template() {
+		$this->guard_action( 'greenberry_newsletter_send_test_template' );
+
+		try {
+			$result = $this->mailer->send_test_template(
+				isset( $_POST['template_id'] ) ? absint( $_POST['template_id'] ) : 0,
+				isset( $_POST['test_recipient'] ) ? wp_unslash( $_POST['test_recipient'] ) : ''
+			);
+		} catch ( \Throwable $error ) {
+			$result = new \WP_Error( 'test_send_failed', __( 'The test email could not be sent.', 'greenberry' ) );
+		}
+
+		$this->redirect( 'templates', is_wp_error( $result ) ? $result->get_error_code() : 'template_test_sent' );
 	}
 
 	/**
@@ -787,8 +810,12 @@ class Admin {
 		$edit_automation_id = isset( $_GET['edit_automation'] ) ? absint( $_GET['edit_automation'] ) : 0;
 		$editing_automation = $edit_automation_id ? $this->repository->get_automation( $edit_automation_id ) : null;
 		$is_editing         = (bool) $editing_automation;
-		$selected_template  = $is_editing ? $this->repository->get_automation_template_id( $editing_automation ) : 0;
-		$post_types         = $is_editing ? implode( ', ', $this->repository->get_automation_post_types( $editing_automation ) ) : 'post';
+		$selected_template   = $is_editing ? $this->repository->get_automation_template_id( $editing_automation ) : 0;
+		$selected_post_types = $is_editing ? $this->repository->get_automation_post_types( $editing_automation ) : array( 'post' );
+		$all_post_types      = get_post_types( array( 'public' => true ), 'objects' );
+		unset( $all_post_types['attachment'] );
+		$selected_categories = $is_editing ? $this->repository->get_automation_categories( $editing_automation ) : array();
+		$all_categories      = get_categories( array( 'hide_empty' => false, 'number' => 200 ) );
 		?>
 		<div class="greenberry-grid">
 			<div class="greenberry-panel">
@@ -807,24 +834,50 @@ class Admin {
 					</div>
 					<div class="greenberry-field">
 						<label for="greenberry-automation-trigger"><?php esc_html_e( 'Trigger', 'greenberry' ); ?></label>
+						<?php $current_trigger = $is_editing ? $editing_automation->trigger_type : 'weekly_digest'; ?>
 						<select id="greenberry-automation-trigger" name="trigger_type">
-							<option value="weekly_digest" <?php selected( $is_editing ? $editing_automation->trigger_type : 'weekly_digest', 'weekly_digest' ); ?>><?php esc_html_e( 'Weekly digest', 'greenberry' ); ?></option>
-							<option value="daily_digest" <?php selected( $is_editing ? $editing_automation->trigger_type : 'weekly_digest', 'daily_digest' ); ?>><?php esc_html_e( 'Daily digest', 'greenberry' ); ?></option>
-							<option value="post_publish" <?php selected( $is_editing ? $editing_automation->trigger_type : 'weekly_digest', 'post_publish' ); ?>><?php esc_html_e( 'When a post is published', 'greenberry' ); ?></option>
+							<option value="daily_digest" <?php selected( $current_trigger, 'daily_digest' ); ?>><?php esc_html_e( 'Daily digest', 'greenberry' ); ?></option>
+							<option value="weekly_digest" <?php selected( $current_trigger, 'weekly_digest' ); ?>><?php esc_html_e( 'Weekly digest', 'greenberry' ); ?></option>
+							<option value="monthly_digest" <?php selected( $current_trigger, 'monthly_digest' ); ?>><?php esc_html_e( 'Monthly digest', 'greenberry' ); ?></option>
+							<option value="yearly_digest" <?php selected( $current_trigger, 'yearly_digest' ); ?>><?php esc_html_e( 'Yearly digest', 'greenberry' ); ?></option>
+							<option value="post_publish" <?php selected( $current_trigger, 'post_publish' ); ?>><?php esc_html_e( 'When a post is published', 'greenberry' ); ?></option>
 						</select>
+						<p class="description"><?php esc_html_e( 'Digests send the latest posts on a schedule; "When a post is published" sends immediately for each new post.', 'greenberry' ); ?></p>
 					</div>
 					<div class="greenberry-field">
 						<label for="greenberry-automation-list"><?php esc_html_e( 'List', 'greenberry' ); ?></label>
 						<?php $this->render_list_select( 'greenberry-automation-list', $is_editing ? absint( $editing_automation->list_id ) : 0 ); ?>
 					</div>
 					<div class="greenberry-field">
-						<label for="greenberry-automation-post-types"><?php esc_html_e( 'Post types', 'greenberry' ); ?></label>
-						<input id="greenberry-automation-post-types" type="text" name="post_types" value="<?php echo esc_attr( $post_types ); ?>">
+						<label><?php esc_html_e( 'Post types', 'greenberry' ); ?></label>
+						<div class="greenberry-checkbox-grid">
+							<?php foreach ( $all_post_types as $post_type ) : ?>
+								<label>
+									<input type="checkbox" name="post_types[]" value="<?php echo esc_attr( $post_type->name ); ?>" <?php checked( in_array( $post_type->name, $selected_post_types, true ) ); ?>>
+									<?php echo esc_html( isset( $post_type->labels->singular_name ) && $post_type->labels->singular_name ? $post_type->labels->singular_name : $post_type->name ); ?>
+								</label>
+							<?php endforeach; ?>
+						</div>
+						<p class="description"><?php esc_html_e( 'Controls which content triggers or fills the email.', 'greenberry' ); ?></p>
 					</div>
+					<?php if ( ! empty( $all_categories ) ) : ?>
+						<div class="greenberry-field">
+							<label><?php esc_html_e( 'Categories', 'greenberry' ); ?></label>
+							<div class="greenberry-checkbox-grid greenberry-checkbox-grid--scroll">
+								<?php foreach ( $all_categories as $category ) : ?>
+									<label>
+										<input type="checkbox" name="categories[]" value="<?php echo esc_attr( $category->term_id ); ?>" <?php checked( in_array( absint( $category->term_id ), $selected_categories, true ) ); ?>>
+										<?php echo esc_html( $category->name ); ?>
+									</label>
+								<?php endforeach; ?>
+							</div>
+							<p class="description"><?php esc_html_e( 'Optional. Leave none selected for all categories. Applies to standard posts only.', 'greenberry' ); ?></p>
+						</div>
+					<?php endif; ?>
 					<div class="greenberry-field">
 						<label for="greenberry-automation-subject"><?php esc_html_e( 'Subject', 'greenberry' ); ?></label>
 						<input id="greenberry-automation-subject" type="text" name="subject" value="<?php echo esc_attr( $is_editing ? $editing_automation->subject : __( '{site_name} updates', 'greenberry' ) ); ?>" required>
-						<p class="description"><?php esc_html_e( 'Use {site_name}; post-publish automations can also use {post_title}.', 'greenberry' ); ?></p>
+						<?php Email_Template::render_placeholder_picker( 'greenberry-automation-subject' ); ?>
 					</div>
 					<div class="greenberry-field">
 							<label for="greenberry-automation-template"><?php esc_html_e( 'Template', 'greenberry' ); ?></label>
@@ -834,7 +887,7 @@ class Admin {
 									<option value="<?php echo esc_attr( $template_id ); ?>" <?php selected( $selected_template, absint( $template_id ) ); ?>><?php echo esc_html( $title ); ?></option>
 								<?php endforeach; ?>
 							</select>
-							<p class="description"><?php esc_html_e( 'Design templates in the Templates tab. The {posts} block is replaced with the latest posts.', 'greenberry' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Design templates in the Templates tab. Use the "Latest Posts (Email)" block (or a {posts} placeholder) to show recent posts.', 'greenberry' ); ?></p>
 						</div>
 						<div class="greenberry-actions">
 							<?php submit_button( $is_editing ? __( 'Update Automation', 'greenberry' ) : __( 'Create Automation', 'greenberry' ), 'primary', 'submit', false ); ?>
@@ -914,7 +967,7 @@ class Admin {
 				<h2><?php esc_html_e( 'Email templates', 'greenberry' ); ?></h2>
 				<a class="button button-primary" href="<?php echo esc_url( $new_url ); ?>"><?php esc_html_e( 'Add Template', 'greenberry' ); ?></a>
 			</div>
-			<p class="greenberry-muted"><?php esc_html_e( 'Design reusable email layouts in the block editor. Add a paragraph containing {posts} where the latest posts should appear; digest automations replace it with their content.', 'greenberry' ); ?></p>
+			<p class="greenberry-muted"><?php esc_html_e( 'Design reusable email layouts in the block editor with images, headings, and buttons. Add the "Latest Posts (Email)" block where recent posts should appear, then use Send test to preview it by email.', 'greenberry' ); ?></p>
 
 			<?php if ( empty( $templates ) ) : ?>
 				<p><?php esc_html_e( 'No templates yet. Add one, then choose it on a weekly or daily digest automation.', 'greenberry' ); ?></p>
@@ -936,6 +989,13 @@ class Admin {
 								<td>
 									<div class="greenberry-actions">
 										<a class="button button-small" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'greenberry' ); ?></a>
+										<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="greenberry-inline-form">
+											<input type="hidden" name="action" value="greenberry_newsletter_send_test_template">
+											<input type="hidden" name="template_id" value="<?php echo esc_attr( $template->ID ); ?>">
+											<input type="hidden" name="test_recipient" value="<?php echo esc_attr( sanitize_email( get_option( 'admin_email' ) ) ); ?>">
+											<?php wp_nonce_field( 'greenberry_newsletter_send_test_template' ); ?>
+											<button type="submit" class="button button-small"><?php esc_html_e( 'Send test', 'greenberry' ); ?></button>
+										</form>
 										<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="greenberry-inline-form" onsubmit="return confirm( '<?php echo esc_js( __( 'Delete this template?', 'greenberry' ) ); ?>' );">
 											<input type="hidden" name="action" value="greenberry_newsletter_delete_template">
 											<input type="hidden" name="post_id" value="<?php echo esc_attr( $template->ID ); ?>">
@@ -1091,6 +1151,8 @@ class Admin {
 			'automation_updated'        => __( 'Automation updated.', 'greenberry' ),
 			'automation_deleted'        => __( 'Automation deleted.', 'greenberry' ),
 			'template_deleted'          => __( 'Template deleted.', 'greenberry' ),
+			'template_test_sent'        => __( 'Test email sent.', 'greenberry' ),
+			'template_not_found'        => __( 'That template could not be found.', 'greenberry' ),
 			'invalid_email'             => __( 'Please enter a valid email address.', 'greenberry' ),
 			'contact_not_found'         => __( 'That contact could not be found.', 'greenberry' ),
 			'contact_insert_failed'     => __( 'Could not save the contact.', 'greenberry' ),

@@ -25,6 +25,15 @@
 	gap: 18px;
 }
 
+.greenberry-form__body {
+	display: grid;
+	gap: 16px;
+}
+
+.greenberry-form__body .wp-block-column > * + * {
+	margin-top: 14px;
+}
+
 .greenberry-form__fields {
 	display: grid;
 	gap: 14px;
@@ -132,7 +141,8 @@
 }
 
 .greenberry-form-field-editor .greenberry-form__field {
-	height: 100%;
+	align-content: start;
+	height: auto;
 }
 
 .greenberry-form__field input:focus,
@@ -209,15 +219,25 @@
 }
 
 .greenberry-form__status {
-	font-size: 0.92rem;
+	font-size: 1rem;
+	font-weight: 600;
+	line-height: 1.4;
 	min-height: 1.35em;
-	opacity: 0.86;
+}
+
+.greenberry-form__status--success,
+.greenberry-form__status--error {
+	border-radius: 6px;
+	display: inline-block;
+	padding: 8px 14px;
 }
 
 .greenberry-form__status--success {
-	color: var(--wp--preset--color--accent-4, #008a20);
+	background: #e6f4ea;
+	color: #0a5c2b;
 }
 
 .greenberry-form__status--error {
-	color: var(--wp--preset--color--accent-3, #b32d2e);
+	background: #fcebea;
+	color: #a91a16;
 }

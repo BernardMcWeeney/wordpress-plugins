@@ -49,6 +49,10 @@ class Plugin {
 		require_once GREENBERRY_PLUGIN_DIR . 'Social/class-social-editor.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Social/class-social-admin.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'Social/class-social-module.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Stats/class-stats-repository.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Stats/class-stats-tracker.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Stats/class-stats-admin.php';
+		require_once GREENBERRY_PLUGIN_DIR . 'Stats/class-stats-module.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'AdminColours/class-admin-colours-settings.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'AdminColours/class-admin-colours-admin.php';
 		require_once GREENBERRY_PLUGIN_DIR . 'AdminColours/class-admin-colours-module.php';
@@ -92,6 +96,7 @@ class Plugin {
 		\Greenberry\Newsletter\Module::activate();
 		\Greenberry\Forms\Module::activate();
 		\Greenberry\Social\Module::activate();
+		\Greenberry\Stats\Module::activate();
 		\Greenberry\AdminColours\Module::activate();
 		\Greenberry\AdminLogin\Module::activate();
 		\Greenberry\CategoryFeaturedImage\Module::activate();
@@ -108,6 +113,7 @@ class Plugin {
 		\Greenberry\Newsletter\Module::deactivate();
 		\Greenberry\Forms\Module::deactivate();
 		\Greenberry\Social\Module::deactivate();
+		\Greenberry\Stats\Module::deactivate();
 		\Greenberry\AdminColours\Module::deactivate();
 		\Greenberry\AdminLogin\Module::deactivate();
 		\Greenberry\CategoryFeaturedImage\Module::deactivate();

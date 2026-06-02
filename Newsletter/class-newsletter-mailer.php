@@ -153,6 +153,79 @@ class Mailer {
 	}
 
 	/**
+	 * Sends a reusable email template to one test recipient.
+	 *
+	 * Renders the template's blocks and fills the {posts} token with the most
+	 * recent published posts so the layout can be previewed by email.
+	 *
+	 * @param int    $template_id Template post ID.
+	 * @param string $recipient Test recipient email.
+	 * @return true|\WP_Error
+	 */
+	public function send_test_template( $template_id, $recipient ) {
+		$recipient = sanitize_email( $recipient );
+		if ( ! is_email( $recipient ) ) {
+			return new \WP_Error( 'invalid_test_recipient', __( 'Please enter a valid test recipient email address.', 'greenberry' ) );
+		}
+
+		$template_id = absint( $template_id );
+		$sample      = get_posts(
+			array(
+				'post_status'    => 'publish',
+				'posts_per_page' => 3,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+				'no_found_rows'  => true,
+			)
+		);
+
+		$content = Email_Template_Post_Type::render_content(
+			$template_id,
+			array(
+				'{posts}'     => $this->build_posts_list( $sample ),
+				'{site_name}' => get_bloginfo( 'name' ),
+			)
+		);
+
+		if ( null === $content ) {
+			return new \WP_Error( 'template_not_found', __( 'That template could not be found.', 'greenberry' ) );
+		}
+
+		if ( is_wp_error( $content ) ) {
+			return $content;
+		}
+
+		if ( '' === trim( (string) $content ) ) {
+			return new \WP_Error( 'template_render_failed', __( 'The email template could not be rendered.', 'greenberry' ) );
+		}
+
+		$subject = sprintf(
+			/* translators: %s: template title. */
+			__( '[Test] %s', 'greenberry' ),
+			get_the_title( $template_id )
+		);
+
+		$html = $this->template->render(
+			$subject,
+			'',
+			$content,
+			(object) array(
+				'id'    => 0,
+				'email' => $recipient,
+			)
+		);
+
+		$sent = $this->send_mail(
+			$recipient,
+			$subject,
+			$html,
+			array( 'Content-Type: text/html; charset=UTF-8' )
+		);
+
+		return $sent ? true : new \WP_Error( 'test_send_failed', __( 'The test email could not be sent.', 'greenberry' ) );
+	}
+
+	/**
 	 * Resolves a campaign subject, falling back to the post title.
 	 *
 	 * @param \WP_Post $post Campaign post.
@@ -160,8 +233,29 @@ class Mailer {
 	 */
 	private function campaign_subject( $post ) {
 		$subject = trim( (string) get_post_meta( $post->ID, Campaign_Post_Type::META_SUBJECT, true ) );
+		$subject = '' !== $subject ? $subject : get_the_title( $post );
 
-		return '' !== $subject ? $subject : get_the_title( $post );
+		return $this->apply_subject_tokens( $subject );
+	}
+
+	/**
+	 * Replaces subject/title placeholders with live values.
+	 *
+	 * @param string               $subject Raw subject containing tokens.
+	 * @param array<string,string> $extra   Additional token replacements.
+	 * @return string
+	 */
+	private function apply_subject_tokens( $subject, $extra = array() ) {
+		$replacements = array(
+			'{site_name}'  => get_bloginfo( 'name' ),
+			'{date}'       => wp_date( get_option( 'date_format' ) ),
+			'{day}'        => wp_date( 'j' ),
+			'{month}'      => wp_date( 'F' ),
+			'{year}'       => wp_date( 'Y' ),
+			'{post_title}' => '',
+		);
+
+		return strtr( (string) $subject, array_merge( $replacements, $extra ) );
 	}
 
 	/**
@@ -282,10 +376,14 @@ class Mailer {
 				continue;
 			}
 
-			$subject = str_replace(
-				array( '{post_title}', '{site_name}' ),
-				array( get_the_title( $post ), get_bloginfo( 'name' ) ),
-				$automation->subject
+			$categories = $this->repository->get_automation_categories( $automation );
+			if ( ! empty( $categories ) && ! has_category( $categories, $post ) ) {
+				continue;
+			}
+
+			$subject = $this->apply_subject_tokens(
+				$automation->subject,
+				array( '{post_title}' => get_the_title( $post ) )
 			);
 
 			$content = $this->compose_with_template(
@@ -310,7 +408,9 @@ class Mailer {
 	public function run_digest_automations() {
 		$automations = array_merge(
 			$this->repository->get_automations( 'daily_digest' ),
-			$this->repository->get_automations( 'weekly_digest' )
+			$this->repository->get_automations( 'weekly_digest' ),
+			$this->repository->get_automations( 'monthly_digest' ),
+			$this->repository->get_automations( 'yearly_digest' )
 		);
 
 		foreach ( $automations as $automation ) {
@@ -324,11 +424,7 @@ class Mailer {
 				continue;
 			}
 
-			$subject = str_replace(
-				'{site_name}',
-				get_bloginfo( 'name' ),
-				$automation->subject
-			);
+			$subject = $this->apply_subject_tokens( $automation->subject );
 
 			$content = $this->compose_with_template(
 				$automation,
@@ -346,18 +442,36 @@ class Mailer {
 	}
 
 	/**
+	 * Returns the interval, in seconds, for a digest automation's cadence.
+	 *
+	 * @param object $automation Automation row.
+	 * @return int
+	 */
+	private function digest_interval( $automation ) {
+		switch ( $automation->trigger_type ) {
+			case 'yearly_digest':
+				return YEAR_IN_SECONDS;
+			case 'monthly_digest':
+				return MONTH_IN_SECONDS;
+			case 'weekly_digest':
+				return WEEK_IN_SECONDS;
+			default:
+				return DAY_IN_SECONDS;
+		}
+	}
+
+	/**
 	 * Checks whether a digest automation is due.
 	 *
 	 * @param object $automation Automation row.
 	 * @return bool
 	 */
 	private function is_digest_due( $automation ) {
-		$interval = 'weekly_digest' === $automation->trigger_type ? WEEK_IN_SECONDS : DAY_IN_SECONDS;
 		if ( empty( $automation->last_sent_at ) ) {
 			return true;
 		}
 
-		return ( current_time( 'timestamp' ) - strtotime( $automation->last_sent_at ) ) >= $interval;
+		return ( current_time( 'timestamp' ) - strtotime( $automation->last_sent_at ) ) >= $this->digest_interval( $automation );
 	}
 
 	/**
@@ -367,26 +481,31 @@ class Mailer {
 	 * @return array<int,\WP_Post>
 	 */
 	private function get_digest_posts( $automation ) {
-		$interval = 'weekly_digest' === $automation->trigger_type ? WEEK_IN_SECONDS : DAY_IN_SECONDS;
+		$interval = $this->digest_interval( $automation );
 		$since    = ! empty( $automation->last_sent_at )
 			? $automation->last_sent_at
 			: gmdate( 'Y-m-d H:i:s', current_time( 'timestamp', true ) - $interval );
 
-		return get_posts(
-			array(
-				'post_type'      => $this->repository->get_automation_post_types( $automation ),
-				'post_status'    => 'publish',
-				'posts_per_page' => 12,
-				'date_query'     => array(
-					array(
-						'after'     => $since,
-						'inclusive' => false,
-					),
+		$query_args = array(
+			'post_type'      => $this->repository->get_automation_post_types( $automation ),
+			'post_status'    => 'publish',
+			'posts_per_page' => 12,
+			'date_query'     => array(
+				array(
+					'after'     => $since,
+					'inclusive' => false,
 				),
-				'orderby'        => 'date',
-				'order'          => 'DESC',
-			)
+			),
+			'orderby'        => 'date',
+			'order'          => 'DESC',
 		);
+
+		$categories = $this->repository->get_automation_categories( $automation );
+		if ( ! empty( $categories ) ) {
+			$query_args['category__in'] = $categories;
+		}
+
+		return get_posts( $query_args );
 	}
 
 	/**
